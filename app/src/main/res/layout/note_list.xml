@@ -45,7 +45,7 @@
             android:cacheColorHint="@null"
             android:listSelector="@android:color/transparent"
             android:divider="@null"
-            android:fadingEdge="@null" />
+            android:requiresFadingEdge="none" />
     </LinearLayout>
 
     <Button

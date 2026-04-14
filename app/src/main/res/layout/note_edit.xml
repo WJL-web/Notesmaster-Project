@@ -84,8 +84,10 @@
                 android:fadingEdgeLength="0dip">
 
                 <LinearLayout
+                    xmlns:android="http://schemas.android.com/apk/res/android"
                     android:layout_width="fill_parent"
-                    android:layout_height="fill_parent">
+                    android:layout_height="fill_parent"
+                    android:orientation="vertical">
 
                     <net.micode.notes.ui.NoteEditText
                         android:id="@+id/note_edit_view"

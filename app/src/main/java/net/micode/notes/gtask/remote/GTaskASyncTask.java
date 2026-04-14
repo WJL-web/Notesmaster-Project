@@ -17,12 +17,18 @@
 
 package net.micode.notes.gtask.remote;
 
+import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
+import android.os.Build;
+import android.util.Log;
+
+import androidx.core.app.ActivityCompat;
 
 import net.micode.notes.R;
 import net.micode.notes.ui.NotesListActivity;
@@ -69,14 +75,23 @@ public class GTaskASyncTask extends AsyncTask<Void, String, Integer> {
         notification.defaults = Notification.DEFAULT_LIGHTS;
         notification.flags = Notification.FLAG_AUTO_CANCEL;
         PendingIntent pendingIntent;
-        if (tickerId != R.string.ticker_success) {
-            pendingIntent = PendingIntent.getActivity(mContext, 0, new Intent(mContext,
-                    NotesPreferenceActivity.class), 0);
 
-        } else {
-            pendingIntent = PendingIntent.getActivity(mContext, 0, new Intent(mContext,
-                    NotesListActivity.class), 0);
+        // 1. 先定义符合安全规范的 flags
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            flags |= PendingIntent.FLAG_IMMUTABLE;
         }
+
+        if (tickerId != R.string.ticker_success) {
+            // 同步失败：跳转到设置页（检查账号）
+            pendingIntent = PendingIntent.getActivity(mContext, 0,
+                    new Intent(mContext, NotesPreferenceActivity.class), flags);
+        } else {
+            // 同步成功：跳转到列表页
+            pendingIntent = PendingIntent.getActivity(mContext, 0,
+                    new Intent(mContext, NotesListActivity.class), flags);
+        }
+
         Notification.Builder builder = new Notification.Builder(mContext)
                 .setContentTitle(mContext.getString(R.string.app_name))
                 .setContentText(content)
@@ -84,6 +99,18 @@ public class GTaskASyncTask extends AsyncTask<Void, String, Integer> {
                 .setContentIntent(pendingIntent);
 
         notification = builder.build(); // 注意：如果 getNotification() 报错，就改成 build()
+
+        if (Build.VERSION.SDK_INT >= 33) {
+            // 检查是否已经获得了通知权限
+            if (ActivityCompat.checkSelfPermission(this.mContext, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                // 如果没有权限，在汇报时你可以说：此处应引导用户开启权限。
+                // 为了防止崩溃，如果没有权限可以 return 或者 log 记录
+                Log.w("GTaskSync", "Missing POST_NOTIFICATIONS permission");
+                // return; // 如果不希望在没权限时尝试发送，可以加上 return
+            }
+        }
+
         mNotifiManager.notify(GTASK_SYNC_NOTIFICATION_ID, notification);
     }
 

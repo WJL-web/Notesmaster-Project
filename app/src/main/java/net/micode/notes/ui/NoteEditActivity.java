@@ -430,7 +430,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         if (id == R.id.btn_set_bg_color) {
             mNoteBgColorSelector.setVisibility(View.VISIBLE);
             findViewById(sBgSelectorSelectionMap.get(mWorkingNote.getBgColorId())).setVisibility(
-                    -                    View.VISIBLE);
+                    View.VISIBLE);
         } else if (sBgSelectorBtnsMap.containsKey(id)) {
             findViewById(sBgSelectorSelectionMap.get(mWorkingNote.getBgColorId())).setVisibility(
                     View.GONE);
@@ -615,9 +615,20 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         if (mWorkingNote.getNoteId() > 0) {
             Intent intent = new Intent(this, AlarmReceiver.class);
             intent.setData(ContentUris.withAppendedId(Notes.CONTENT_NOTE_URI, mWorkingNote.getNoteId()));
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
+
+            // 1. 处理 PendingIntent 的 Flags (兼容 Android 12+)
+            // 这里使用 FLAG_UPDATE_CURRENT 保证更新已存在的提醒，并加上 FLAG_IMMUTABLE 保证安全
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                flags |= PendingIntent.FLAG_IMMUTABLE;
+            }
+
+            // 2. 将 0 替换为处理好的 flags
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, flags);
+
             AlarmManager alarmManager = ((AlarmManager) getSystemService(ALARM_SERVICE));
             showAlertHeader();
+
             if(!set) {
                 alarmManager.cancel(pendingIntent);
             } else {

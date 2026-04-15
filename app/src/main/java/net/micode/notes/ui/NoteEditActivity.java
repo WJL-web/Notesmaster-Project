@@ -87,6 +87,8 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     private LinearLayout mSearchPanel;
     private EditText mSearchInsideEditText;
 
+    private TextView mSearchStatusText; // 用来显示 0/0 的那个文本框
+
     private List<Integer> mSearchPositions = new ArrayList<>(); // 存储所有匹配结果的开始坐标
     private int mCurrentSearchIndex = -1; // 当前正在查看第几个结果
 
@@ -434,6 +436,12 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         Button btnDoSearch = (Button) findViewById(R.id.btn_do_search);
         Button btnClearSearch = (Button) findViewById(R.id.btn_clear_search);
 
+        // --- 修改：初始化搜索状态文本框 (0/0) ---
+        mSearchStatusText = (TextView) findViewById(R.id.tv_search_status);
+        if (mSearchStatusText != null) {
+            mSearchStatusText.setText("0/0");
+        }
+
         // --- 新增：上一个/下一个 按钮初始化 ---
         Button btnPrev = (Button) findViewById(R.id.btn_prev);
         Button btnNext = (Button) findViewById(R.id.btn_next);
@@ -455,10 +463,13 @@ public class NoteEditActivity extends Activity implements OnClickListener,
                     if (mSearchInsideEditText != null) {
                         mSearchInsideEditText.setText("");
                     }
-                    // 清除时重置索引表
+                    // 清除时重置索引表和文字显示
                     if (mSearchPositions != null)
                         mSearchPositions.clear();
                     mCurrentSearchIndex = -1;
+                    if (mSearchStatusText != null) {
+                        mSearchStatusText.setText("0/0");
+                    }
                 }
             });
         }
@@ -469,7 +480,6 @@ public class NoteEditActivity extends Activity implements OnClickListener,
                 @Override
                 public void onClick(View v) {
                     if (mSearchPositions != null && !mSearchPositions.isEmpty()) {
-                        // 索引减 1，如果小于 0 则跳到最后一个
                         mCurrentSearchIndex--;
                         if (mCurrentSearchIndex < 0) {
                             mCurrentSearchIndex = mSearchPositions.size() - 1;
@@ -486,7 +496,6 @@ public class NoteEditActivity extends Activity implements OnClickListener,
                 @Override
                 public void onClick(View v) {
                     if (mSearchPositions != null && !mSearchPositions.isEmpty()) {
-                        // 索引加 1，取余实现循环
                         mCurrentSearchIndex = (mCurrentSearchIndex + 1) % mSearchPositions.size();
                         scrollToPresentResult();
                     }
@@ -1023,8 +1032,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
             mSearchPositions.add(start);
 
             // 默认背景全部染成黄色
-            editable.setSpan(new BackgroundColorSpan(Color.YELLOW),
-                    start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            editable.setSpan(new BackgroundColorSpan(Color.YELLOW), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
             start = end;
         }
@@ -1034,6 +1042,17 @@ public class NoteEditActivity extends Activity implements OnClickListener,
             mCurrentSearchIndex = 0;
             scrollToPresentResult(); // 执行跳转定位
         }
+
+        // 在 performHighlight 的最后
+        if (!mSearchPositions.isEmpty()) {
+            mCurrentSearchIndex = 0;
+            scrollToPresentResult();
+        } else {
+            // 如果没搜到，显式设置为 0/0
+            if (mSearchStatusText != null)
+                mSearchStatusText.setText("0/0");
+        }
+
     }
 
     // 清除所有背景标签
@@ -1050,26 +1069,30 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     }
 
     private void scrollToPresentResult() {
-        if (mSearchPositions.isEmpty() || mCurrentSearchIndex < 0)
+        if (mSearchPositions.isEmpty() || mCurrentSearchIndex < 0) {
+            if (mSearchStatusText != null)
+                mSearchStatusText.setText("0/0");
             return;
+        }
 
+        // --- 原有的染色和滚动逻辑 ---
         Editable editable = mNoteEditor.getText();
         String keyword = mSearchInsideEditText.getText().toString();
         int start = mSearchPositions.get(mCurrentSearchIndex);
         int end = start + keyword.length();
 
-        // 1. 先清除掉旧的“当前选中”的高亮（如果有的话）
-        // 为了不误删其他黄色的高亮，我们这里只针对当前选中的位置重新染色覆盖
-        editable.setSpan(new BackgroundColorSpan(Color.rgb(255, 165, 0)), // 橙色表示当前选中
-                start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        editable.setSpan(new BackgroundColorSpan(Color.rgb(255, 165, 0)), start, end,
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
-        // 2. 自动滚动光标到这个位置（像 Word 搜索后自动跳转）
         mNoteEditor.setSelection(start);
         mNoteEditor.requestFocus();
 
-        // 3. 提示当前是第几个结果（可选，如果你有 TextView 显示进度的建议加上）
-        // Toast.makeText(this, "第 " + (mCurrentSearchIndex + 1) + " 个 / 共 " +
-        // mSearchPositions.size() + " 个", Toast.LENGTH_SHORT).show();
+        // --- 新增：更新 1/5 这种进度文字 ---
+        if (mSearchStatusText != null) {
+            // mCurrentSearchIndex 是从 0 开始的，所以显示要 +1
+            String status = (mCurrentSearchIndex + 1) + "/" + mSearchPositions.size();
+            mSearchStatusText.setText(status);
+        }
     }
 
 }

@@ -77,6 +77,9 @@ public class NoteEditText extends AppCompatEditText {
 
     private OnTextViewChangeListener mOnTextViewChangeListener;
 
+    // 加粗功能相关变量
+    private boolean mIsBoldMode = false;
+
     public NoteEditText(Context context) {
         super(context, null);
         mIndex = 0;
@@ -90,13 +93,87 @@ public class NoteEditText extends AppCompatEditText {
         mOnTextViewChangeListener = listener;
     }
 
+    /**
+     * 设置加粗模式
+     * @param bold true表示后续输入的文字自动加粗，false表示正常
+     */
+    public void setBoldMode(boolean bold) {
+        mIsBoldMode = bold;
+    }
+
+    /**
+     * 获取当前是否处于加粗模式
+     */
+    public boolean isBoldMode() {
+        return mIsBoldMode;
+    }
+
+
     public NoteEditText(Context context, AttributeSet attrs) {
         super(context, attrs, android.R.attr.editTextStyle);
+        init();     // 新增
     }
 
     public NoteEditText(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         // TODO Auto-generated constructor stub
+    }
+
+    /**
+     * 初始化，添加文本变化监听器
+     */
+    private void init() {
+        addTextChangedListener(new android.text.TextWatcher() {
+            private int mStart = 0;
+            private int mCount = 0;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // 记录即将变化的位置和长度
+                mStart = start;
+                mCount = count;
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // 如果处于加粗模式，并且是新增加的字符（不是删除）
+                if (mIsBoldMode && count > 0) {
+                    // 计算新输入文字的位置
+                    int newTextStart = mStart;
+                    int newTextEnd = mStart + count;
+
+                    // 对新输入的文字应用加粗样式
+                    android.text.SpannableStringBuilder sb =
+                            new android.text.SpannableStringBuilder(getText());
+
+                    // 检查这些位置是否已经有加粗样式
+                    android.text.style.StyleSpan[] spans = sb.getSpans(
+                            newTextStart, newTextEnd, android.text.style.StyleSpan.class);
+                    boolean alreadyBold = false;
+                    for (android.text.style.StyleSpan span : spans) {
+                        if (span.getStyle() == android.graphics.Typeface.BOLD) {
+                            alreadyBold = true;
+                            break;
+                        }
+                    }
+
+                    // 如果没有加粗样式，则添加
+                    if (!alreadyBold) {
+                        sb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD),
+                                newTextStart, newTextEnd,
+                                android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        setText(sb);
+                        // 设置光标位置到末尾
+                        setSelection(newTextEnd);
+                    }
+                }
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                // 不需要额外处理
+            }
+        });
     }
 
     @Override
@@ -160,6 +237,7 @@ public class NoteEditText extends AppCompatEditText {
                 } else {
                     Log.d(TAG, "OnTextViewChangeListener was not seted");
                 }
+                // 回车后保持加粗模式状态不变
                 break;
             default:
                 break;

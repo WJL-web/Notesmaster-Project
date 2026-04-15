@@ -56,6 +56,8 @@ import android.widget.Toast;
 import android.widget.Button;
 import android.graphics.Color;
 
+import android.widget.ImageButton;
+
 import net.micode.notes.R;
 import net.micode.notes.data.Notes;
 import net.micode.notes.data.Notes.TextNote;
@@ -89,6 +91,10 @@ public class NoteEditActivity extends Activity implements OnClickListener,
 
     private List<Integer> mSearchPositions = new ArrayList<>(); // 存储所有匹配结果的开始坐标
     private int mCurrentSearchIndex = -1; // 当前正在查看第几个结果
+
+    // 加粗功能相关变量
+    private ImageButton mBoldButton;
+    private boolean mIsBoldMode = false;
 
     private class HeadViewHolder {
         public TextView tvModified;
@@ -394,6 +400,19 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         mNoteEditor = (EditText) findViewById(R.id.note_edit_view);
         mNoteEditorPanel = findViewById(R.id.sv_note_edit);
         mNoteBgColorSelector = findViewById(R.id.note_bg_color_selector);
+
+
+        // --- 加粗功能 ---
+        mBoldButton = (ImageButton) findViewById(R.id.btn_bold);
+        if (mBoldButton != null) {
+            mBoldButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    toggleBold();
+                }
+            });
+        }
+
 
         // --- 1. 字数统计逻辑 ---
         mWordCountText = (TextView) findViewById(R.id.tv_word_count);
@@ -905,6 +924,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         }
     }
 
+
     private boolean getWorkingText() {
         boolean hasChecked = false;
         if (mWorkingNote.getCheckListMode() == TextNote.MODE_CHECK_LIST) {
@@ -1072,4 +1092,100 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         // mSearchPositions.size() + " 个", Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * 切换加粗状态
+     */
+    private void toggleBold() {
+        int start = mNoteEditor.getSelectionStart();
+        int end = mNoteEditor.getSelectionEnd();
+
+        if (start != end) {
+            // 有选中文本，对选中文本应用加粗
+            applyBoldToSelection(start, end);
+        } else {
+            // 没有选中文本，切换加粗模式（后续输入自动加粗）
+            toggleBoldMode();
+        }
+    }
+
+    /**
+     * 对选中的文本区域应用加粗或取消加粗
+     */
+    private void applyBoldToSelection(int start, int end) {
+        android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder(mNoteEditor.getText());
+
+        // 检查选中区域是否已经加粗
+        android.text.style.StyleSpan[] spans = sb.getSpans(start, end, android.text.style.StyleSpan.class);
+        boolean hasBold = false;
+        for (android.text.style.StyleSpan span : spans) {
+            if (span.getStyle() == android.graphics.Typeface.BOLD) {
+                hasBold = true;
+                break;
+            }
+        }
+
+        if (hasBold) {
+            // 移除加粗
+            for (android.text.style.StyleSpan span : spans) {
+                if (span.getStyle() == android.graphics.Typeface.BOLD) {
+                    sb.removeSpan(span);
+                }
+            }
+        } else {
+            // 添加加粗
+            sb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD),
+                    start, end, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        mNoteEditor.setText(sb);
+        mNoteEditor.setSelection(end);
+    }
+
+    /**
+     * 切换加粗模式（用于没有选中文本时，后续输入自动加粗）
+     */
+    /**
+     * 切换加粗模式（用于没有选中文本时，后续输入自动加粗）
+     */
+    private void toggleBoldMode() {
+        mIsBoldMode = !mIsBoldMode;
+
+        // 通知 NoteEditText 当前的加粗模式
+        // 注意：mNoteEditor 是当前的编辑框
+        if (mNoteEditor instanceof NoteEditText) {
+            ((NoteEditText) mNoteEditor).setBoldMode(mIsBoldMode);
+        }
+
+        updateBoldButtonState();
+
+        String tip = mIsBoldMode ? "已开启加粗模式" : "已关闭加粗模式";
+        Toast.makeText(this, tip, Toast.LENGTH_SHORT).show();
+    }
+    /**
+     * 更新加粗按钮的显示状态
+     */
+    private void updateBoldButtonState() {
+        if (mBoldButton != null) {
+            if (mIsBoldMode) {
+                mBoldButton.setAlpha(1.0f);
+                mBoldButton.setColorFilter(Color.BLUE);
+            } else {
+                mBoldButton.setAlpha(0.5f);
+                mBoldButton.setColorFilter(null);
+            }
+        }
+    }
+
+    /**
+     * 输入新文字时应用加粗（需要在 NoteEditText 中调用）
+     * 这个方法供 NoteEditText 调用
+     */
+    public boolean isBoldMode() {
+        return mIsBoldMode;
+    }
+
 }
+
+
+
+

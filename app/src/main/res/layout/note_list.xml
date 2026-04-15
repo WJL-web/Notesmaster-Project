@@ -37,6 +37,18 @@
             android:textColor="#FFEAD1AE"
             android:textSize="@dimen/text_font_size_medium" />
 
+        <EditText
+            android:id="@+id/et_search"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:hint="搜索便签内容..."
+            android:padding="10dp"
+            android:singleLine="true"
+            android:textSize="16sp"
+            android:textColor="#333333"
+            android:background="@android:drawable/editbox_background_normal" />
+
         <ListView
             android:id="@+id/notes_list"
             android:layout_width="fill_parent"

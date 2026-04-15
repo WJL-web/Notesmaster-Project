@@ -63,8 +63,11 @@ import java.io.InputStreamReader;
 import java.util.HashSet;
 
 public class NotesListActivity extends Activity implements OnClickListener, OnItemLongClickListener {
+
+    private EditText mSearchEditText;
+
     private static final int FOLDER_NOTE_LIST_QUERY_TOKEN = 0;
-    private static final int FOLDER_LIST_QUERY_TOKEN      = 1;
+    private static final int FOLDER_LIST_QUERY_TOKEN = 1;
     private static final int MENU_FOLDER_DELETE = 0;
     private static final int MENU_FOLDER_VIEW = 1;
     private static final int MENU_FOLDER_CHANGE_NAME = 2;
@@ -96,7 +99,7 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
             + NoteColumns.NOTES_COUNT + ">0)";
 
     private final static int REQUEST_CODE_OPEN_NODE = 102;
-    private final static int REQUEST_CODE_NEW_NODE  = 103;
+    private final static int REQUEST_CODE_NEW_NODE = 103;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,7 +129,7 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
                 if (in != null) {
                     InputStreamReader isr = new InputStreamReader(in);
                     BufferedReader br = new BufferedReader(isr);
-                    char [] buf = new char[1024];
+                    char[] buf = new char[1024];
                     int len = 0;
                     while ((len = br.read(buf)) > 0) {
                         sb.append(buf, 0, len);
@@ -139,7 +142,7 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
                 e.printStackTrace();
                 return;
             } finally {
-                if(in != null) {
+                if (in != null) {
                     try {
                         in.close();
                     } catch (IOException e) {
@@ -187,6 +190,50 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
         mTitleBar = (TextView) findViewById(R.id.tv_title_bar);
         mState = ListEditState.NOTE_LIST;
         mModeCallBack = new ModeCallback();
+
+        // ================= 新增：搜索栏逻辑开始 =================
+        // 1. 获取我们在 note_list.xml 中添加的搜索框控件
+        mSearchEditText = (EditText) findViewById(R.id.et_search);
+
+        // 2. 只有当搜索框存在时才绑定监听，防止空指针异常
+        if (mSearchEditText != null) {
+            mSearchEditText.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                    // 文本变化前不需要处理
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    String selection = null;
+                    String[] selectionArgs = null;
+                    String searchString = s.toString().trim();
+
+                    if (!TextUtils.isEmpty(searchString)) {
+                        // 修正 1: CONTENT 改为 SNIPPET
+                        selection = NoteColumns.SNIPPET + " LIKE ?";
+                        selectionArgs = new String[] { "%" + searchString + "%" };
+                    }
+
+                    // 修正 2, 3, 4: 对应你代码中实际存在的变量名
+                    mBackgroundQueryHandler.startQuery(
+                            FOLDER_NOTE_LIST_QUERY_TOKEN, // 替换为 FOLDER_NOTE_LIST_QUERY_TOKEN
+                            null,
+                            Notes.CONTENT_NOTE_URI, // 替换为 CONTENT_NOTE_URI
+                            NoteItemData.PROJECTION,
+                            selection,
+                            selectionArgs,
+                            NoteColumns.MODIFIED_DATE + " DESC" // 替换为具体的排序字段
+                    );
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    // 文本变化后不需要处理
+                }
+            });
+        }
+        // ================= 新增：搜索栏逻辑结束 =================
     }
 
     private class ModeCallback implements ListView.MultiChoiceModeListener, OnMenuItemClickListener {
@@ -216,7 +263,7 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
             mDropDownMenu = new DropdownMenu(NotesListActivity.this,
                     (Button) customView.findViewById(R.id.selection_menu),
                     R.menu.note_list_dropdown);
-            mDropDownMenu.setOnDropdownMenuItemClickListener(new PopupMenu.OnMenuItemClickListener(){
+            mDropDownMenu.setOnDropdownMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                 public boolean onMenuItemClick(MenuItem item) {
                     mNotesListAdapter.selectAll(!mNotesListAdapter.isAllSelected());
                     updateMenu();
@@ -261,7 +308,7 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
         }
 
         public void onItemCheckedStateChanged(ActionMode mode, int position, long id,
-                                              boolean checked) {
+                boolean checked) {
             mNotesListAdapter.setCheckedItem(position, checked);
             updateMenu();
         }
@@ -284,7 +331,7 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
                 builder.setPositiveButton(android.R.string.ok,
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
-                                                int which) {
+                                    int which) {
                                 batchDelete();
                             }
                         });
@@ -405,7 +452,8 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
                         Log.e(TAG, "Delete notes error");
                     }
                 } else {
-                    if (!DataUtils.batchMoveToFolder(mContentResolver, mNotesListAdapter.getSelectedItemIds(), Notes.ID_TRASH_FOLER)) {
+                    if (!DataUtils.batchMoveToFolder(mContentResolver, mNotesListAdapter.getSelectedItemIds(),
+                            Notes.ID_TRASH_FOLER)) {
                         Log.e(TAG, "Move notes to trash folder error");
                     }
                 }
@@ -428,7 +476,8 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
     }
 
     private void deleteFolder(long folderId) {
-        if (folderId == Notes.ID_ROOT_FOLDER) return;
+        if (folderId == Notes.ID_ROOT_FOLDER)
+            return;
         HashSet<Long> ids = new HashSet<Long>();
         ids.add(folderId);
         HashSet<AppWidgetAttribute> widgets = DataUtils.getFolderNoteWidget(mContentResolver, folderId);
@@ -514,7 +563,7 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
         });
 
         final Dialog dialog = builder.setView(view).show();
-        final Button positive = (Button)dialog.findViewById(android.R.id.button1);
+        final Button positive = (Button) dialog.findViewById(android.R.id.button1);
         positive.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
                 hideSoftInput(etName);
@@ -544,13 +593,18 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
             }
         });
 
-        if (TextUtils.isEmpty(etName.getText())) positive.setEnabled(false);
+        if (TextUtils.isEmpty(etName.getText()))
+            positive.setEnabled(false);
         etName.addTextChangedListener(new TextWatcher() {
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 positive.setEnabled(!TextUtils.isEmpty(etName.getText()));
             }
-            public void afterTextChanged(Editable s) {}
+
+            public void afterTextChanged(Editable s) {
+            }
         });
     }
 
@@ -599,14 +653,16 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
 
     @Override
     public void onContextMenuClosed(Menu menu) {
-        if (mNotesListView != null) mNotesListView.setOnCreateContextMenuListener(null);
+        if (mNotesListView != null)
+            mNotesListView.setOnCreateContextMenuListener(null);
         super.onContextMenuClosed(menu);
     }
 
-    // 此处已修改：将 switch 改为 if-else 
+    // 此处已修改：将 switch 改为 if-else
     @Override
     public boolean onContextItemSelected(MenuItem item) {
-        if (mFocusNoteDataItem == null) return false;
+        if (mFocusNoteDataItem == null)
+            return false;
         int id = item.getItemId();
         if (id == MENU_FOLDER_VIEW) {
             openFolder(mFocusNoteDataItem);
@@ -698,7 +754,8 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
             if (view instanceof NotesListItem) {
                 NoteItemData item = ((NotesListItem) view).getItemData();
                 if (mNotesListAdapter.isInChoiceMode()) {
-                    mModeCallBack.onItemCheckedStateChanged(null, position, id, !mNotesListAdapter.isSelectedItem(position));
+                    mModeCallBack.onItemCheckedStateChanged(null, position, id,
+                            !mNotesListAdapter.isSelectedItem(position));
                 } else {
                     if (item.getType() == Notes.TYPE_NOTE) {
                         openNode(item);

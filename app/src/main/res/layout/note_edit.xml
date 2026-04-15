@@ -75,6 +75,61 @@
                 android:background="@drawable/bg_btn_set_color" />
         </LinearLayout>
 
+
+        <LinearLayout
+            android:id="@+id/ll_search_panel"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="5dip"
+            android:background="#F0F0F0"
+            android:visibility="gone">
+            <EditText
+                android:id="@+id/et_search_within_note"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="查找关键词..."
+                android:textSize="14sp"
+                android:singleLine="true"
+                android:background="@android:drawable/editbox_background_normal" />
+
+            <Button
+                android:id="@+id/btn_do_search"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="高亮"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btn_clear_search"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="清除"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btn_prev"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="↑" />
+
+            <Button
+                android:id="@+id/btn_next"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="↓" />
+
+            <TextView
+                android:id="@+id/tv_search_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0/0"
+                android:layout_marginLeft="5dip" />
+
+        </LinearLayout>
+
+
         <LinearLayout
             android:id="@+id/sv_note_edit"
             android:layout_width="fill_parent"

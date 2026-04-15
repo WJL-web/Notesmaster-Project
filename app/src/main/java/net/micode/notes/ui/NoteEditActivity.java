@@ -53,6 +53,8 @@ import android.widget.TextView;
 import android.text.TextWatcher;
 import android.text.Editable;
 import android.widget.Toast;
+import android.widget.Button;
+import android.graphics.Color;
 
 import net.micode.notes.R;
 import net.micode.notes.data.Notes;
@@ -73,11 +75,20 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class NoteEditActivity extends Activity implements OnClickListener,
         NoteSettingChangedListener, OnTextViewChangeListener {
 
     // 在这里添加
     private TextView mWordCountText;
+
+    private LinearLayout mSearchPanel;
+    private EditText mSearchInsideEditText;
+
+    private List<Integer> mSearchPositions = new ArrayList<>(); // 存储所有匹配结果的开始坐标
+    private int mCurrentSearchIndex = -1; // 当前正在查看第几个结果
 
     private class HeadViewHolder {
         public TextView tvModified;
@@ -373,66 +384,138 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     }
 
     private void initResources() {
-    mHeadViewPanel = findViewById(R.id.note_title);
-    mNoteHeaderHolder = new HeadViewHolder();
-    mNoteHeaderHolder.tvModified = (TextView) findViewById(R.id.tv_modified_date);
-    mNoteHeaderHolder.ivAlertIcon = (ImageView) findViewById(R.id.iv_alert_icon);
-    mNoteHeaderHolder.tvAlertDate = (TextView) findViewById(R.id.tv_alert_date);
-    mNoteHeaderHolder.ibSetBgColor = (ImageView) findViewById(R.id.btn_set_bg_color);
-    mNoteHeaderHolder.ibSetBgColor.setOnClickListener(this);
-    mNoteEditor = (EditText) findViewById(R.id.note_edit_view);
-    mNoteEditorPanel = findViewById(R.id.sv_note_edit);
-    mNoteBgColorSelector = findViewById(R.id.note_bg_color_selector);
+        mHeadViewPanel = findViewById(R.id.note_title);
+        mNoteHeaderHolder = new HeadViewHolder();
+        mNoteHeaderHolder.tvModified = (TextView) findViewById(R.id.tv_modified_date);
+        mNoteHeaderHolder.ivAlertIcon = (ImageView) findViewById(R.id.iv_alert_icon);
+        mNoteHeaderHolder.tvAlertDate = (TextView) findViewById(R.id.tv_alert_date);
+        mNoteHeaderHolder.ibSetBgColor = (ImageView) findViewById(R.id.btn_set_bg_color);
+        mNoteHeaderHolder.ibSetBgColor.setOnClickListener(this);
+        mNoteEditor = (EditText) findViewById(R.id.note_edit_view);
+        mNoteEditorPanel = findViewById(R.id.sv_note_edit);
+        mNoteBgColorSelector = findViewById(R.id.note_bg_color_selector);
 
-    // --- 新增：初始化字数统计控件 ---
-    mWordCountText = (TextView) findViewById(R.id.tv_word_count);
-    
-    // --- 修改：绑定字数统计监听逻辑（排除所有空白字符） ---
-    if (mNoteEditor != null && mWordCountText != null) {
-        mNoteEditor.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                int len = 0;
-                if (s != null) {
-                    // 使用正则表达式 \\s 匹配所有空格、换行、制表符并替换为空
-                    len = s.toString().replaceAll("\\s+", "").length();
+        // --- 1. 字数统计逻辑 ---
+        mWordCountText = (TextView) findViewById(R.id.tv_word_count);
+        if (mNoteEditor != null && mWordCountText != null) {
+            mNoteEditor.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
                 }
-                mWordCountText.setText("字数: " + len);
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    int len = 0;
+                    if (s != null) {
+                        len = s.toString().replaceAll("\\s+", "").length();
+                    }
+                    mWordCountText.setText("字数: " + len);
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                }
+            });
+
+            if (mNoteEditor.getText() != null) {
+                int initialLen = mNoteEditor.getText().toString().replaceAll("\\s+", "").length();
+                mWordCountText.setText("字数: " + initialLen);
             }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
-
-        // 初始显示也采用同样的排除逻辑
-        if (mNoteEditor.getText() != null) {
-            int initialLen = mNoteEditor.getText().toString().replaceAll("\\s+", "").length();
-            mWordCountText.setText("字数: " + initialLen);
         }
-    }
 
-    for (int id : sBgSelectorBtnsMap.keySet()) {
-        ImageView iv = (ImageView) findViewById(id);
-        iv.setOnClickListener(this);
-    }
+        // --- 2. 新增：便签内搜索高亮逻辑 ---
+        mSearchPanel = (LinearLayout) findViewById(R.id.ll_search_panel);
+        mSearchInsideEditText = (EditText) findViewById(R.id.et_search_within_note);
 
-    mFontSizeSelector = findViewById(R.id.font_size_selector);
-    for (int id : sFontSizeBtnsMap.keySet()) {
-        View view = findViewById(id);
-        view.setOnClickListener(this);
+        if (mSearchPanel != null) {
+            mSearchPanel.setVisibility(View.VISIBLE);
+        }
+
+        Button btnDoSearch = (Button) findViewById(R.id.btn_do_search);
+        Button btnClearSearch = (Button) findViewById(R.id.btn_clear_search);
+
+        // --- 新增：上一个/下一个 按钮初始化 ---
+        Button btnPrev = (Button) findViewById(R.id.btn_prev);
+        Button btnNext = (Button) findViewById(R.id.btn_next);
+
+        if (btnDoSearch != null) {
+            btnDoSearch.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    performHighlight();
+                }
+            });
+        }
+
+        if (btnClearSearch != null) {
+            btnClearSearch.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    clearHighlight();
+                    if (mSearchInsideEditText != null) {
+                        mSearchInsideEditText.setText("");
+                    }
+                    // 清除时重置索引表
+                    if (mSearchPositions != null)
+                        mSearchPositions.clear();
+                    mCurrentSearchIndex = -1;
+                }
+            });
+        }
+
+        // --- 绑定“上一个”逻辑 ---
+        if (btnPrev != null) {
+            btnPrev.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mSearchPositions != null && !mSearchPositions.isEmpty()) {
+                        // 索引减 1，如果小于 0 则跳到最后一个
+                        mCurrentSearchIndex--;
+                        if (mCurrentSearchIndex < 0) {
+                            mCurrentSearchIndex = mSearchPositions.size() - 1;
+                        }
+                        scrollToPresentResult();
+                    }
+                }
+            });
+        }
+
+        // --- 绑定“下一个”逻辑 ---
+        if (btnNext != null) {
+            btnNext.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mSearchPositions != null && !mSearchPositions.isEmpty()) {
+                        // 索引加 1，取余实现循环
+                        mCurrentSearchIndex = (mCurrentSearchIndex + 1) % mSearchPositions.size();
+                        scrollToPresentResult();
+                    }
+                }
+            });
+        }
+
+        // --- 3. 原有背景颜色和字体选择逻辑 ---
+        for (int id : sBgSelectorBtnsMap.keySet()) {
+            ImageView iv = (ImageView) findViewById(id);
+            if (iv != null)
+                iv.setOnClickListener(this);
+        }
+
+        mFontSizeSelector = findViewById(R.id.font_size_selector);
+        for (int id : sFontSizeBtnsMap.keySet()) {
+            View view = findViewById(id);
+            if (view != null)
+                view.setOnClickListener(this);
+        }
+
+        mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        mFontSizeId = mSharedPrefs.getInt(PREFERENCE_FONT_SIZE, ResourceParser.BG_DEFAULT_FONT_SIZE);
+
+        if (mFontSizeId >= TextAppearanceResources.getResourcesSize()) {
+            mFontSizeId = ResourceParser.BG_DEFAULT_FONT_SIZE;
+        }
+        mEditTextList = (LinearLayout) findViewById(R.id.note_edit_list);
     }
-    
-    mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-    mFontSizeId = mSharedPrefs.getInt(PREFERENCE_FONT_SIZE, ResourceParser.BG_DEFAULT_FONT_SIZE);
-    
-    if (mFontSizeId >= TextAppearanceResources.getResourcesSize()) {
-        mFontSizeId = ResourceParser.BG_DEFAULT_FONT_SIZE;
-    }
-    mEditTextList = (LinearLayout) findViewById(R.id.note_edit_list);
-}
 
     @Override
     protected void onPause() {
@@ -910,4 +993,83 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     private void showToast(int resId, int duration) {
         Toast.makeText(this, resId, duration).show();
     }
+
+    // 核心染色算法
+    private void performHighlight() {
+        // 1. 判空保护
+        if (mSearchInsideEditText == null || mNoteEditor == null)
+            return;
+
+        String keyword = mSearchInsideEditText.getText().toString();
+
+        // 2. 状态重置：清除旧颜色，清空位置索引表，重置指针
+        clearHighlight();
+        mSearchPositions.clear();
+        mCurrentSearchIndex = -1;
+
+        if (TextUtils.isEmpty(keyword))
+            return;
+
+        // 3. 拿到可编辑对象
+        Editable editable = mNoteEditor.getText();
+        String content = editable.toString();
+
+        // 4. 迭代查找并建立索引
+        int start = 0;
+        while ((start = content.indexOf(keyword, start)) != -1) {
+            int end = start + keyword.length();
+
+            // 将匹配到的起始位置存入列表（这就是我们的“索引表”）
+            mSearchPositions.add(start);
+
+            // 默认背景全部染成黄色
+            editable.setSpan(new BackgroundColorSpan(Color.YELLOW),
+                    start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            start = end;
+        }
+
+        // 5. 自动定位到第一个搜索结果
+        if (!mSearchPositions.isEmpty()) {
+            mCurrentSearchIndex = 0;
+            scrollToPresentResult(); // 执行跳转定位
+        }
+    }
+
+    // 清除所有背景标签
+    private void clearHighlight() {
+        if (mNoteEditor == null)
+            return;
+        android.text.Editable editable = mNoteEditor.getText();
+        // 找到所有 BackgroundColorSpan 类型的标签并移除
+        android.text.style.BackgroundColorSpan[] spans = editable.getSpans(0, editable.length(),
+                android.text.style.BackgroundColorSpan.class);
+        for (android.text.style.BackgroundColorSpan span : spans) {
+            editable.removeSpan(span);
+        }
+    }
+
+    private void scrollToPresentResult() {
+        if (mSearchPositions.isEmpty() || mCurrentSearchIndex < 0)
+            return;
+
+        Editable editable = mNoteEditor.getText();
+        String keyword = mSearchInsideEditText.getText().toString();
+        int start = mSearchPositions.get(mCurrentSearchIndex);
+        int end = start + keyword.length();
+
+        // 1. 先清除掉旧的“当前选中”的高亮（如果有的话）
+        // 为了不误删其他黄色的高亮，我们这里只针对当前选中的位置重新染色覆盖
+        editable.setSpan(new BackgroundColorSpan(Color.rgb(255, 165, 0)), // 橙色表示当前选中
+                start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        // 2. 自动滚动光标到这个位置（像 Word 搜索后自动跳转）
+        mNoteEditor.setSelection(start);
+        mNoteEditor.requestFocus();
+
+        // 3. 提示当前是第几个结果（可选，如果你有 TextView 显示进度的建议加上）
+        // Toast.makeText(this, "第 " + (mCurrentSearchIndex + 1) + " 个 / 共 " +
+        // mSearchPositions.size() + " 个", Toast.LENGTH_SHORT).show();
+    }
+
 }

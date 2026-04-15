@@ -32,18 +32,19 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
+/**
+ * 谷歌任务实体类
+ * 作用：表示一个 Google Task，负责与云端 JSON、本地便签数据进行相互转换
+ * 父类：Node 定义了任务的基本属性和同步行为
+ */
 public class Task extends Node {
     private static final String TAG = Task.class.getSimpleName();
 
-    private boolean mCompleted;
-
-    private String mNotes;
-
-    private JSONObject mMetaInfo;
-
-    private Task mPriorSibling;
-
-    private TaskList mParent;
+    private boolean mCompleted;         // 任务是否完成
+    private String mNotes;             // 任务附加备注
+    private JSONObject mMetaInfo;       // 元数据（保存本地便签的原始信息）
+    private Task mPriorSibling;        // 前一个兄弟任务（用于排序）
+    private TaskList mParent;          // 所属任务列表
 
     public Task() {
         super();
@@ -54,21 +55,24 @@ public class Task extends Node {
         mMetaInfo = null;
     }
 
+    /**
+     * 生成创建任务的 JSON 请求（用于上传到谷歌任务）
+     */
     public JSONObject getCreateAction(int actionId) {
         JSONObject js = new JSONObject();
 
         try {
-            // action_type
+            // 操作类型：创建
             js.put(GTaskStringUtils.GTASK_JSON_ACTION_TYPE,
                     GTaskStringUtils.GTASK_JSON_ACTION_TYPE_CREATE);
 
-            // action_id
+            // 操作ID
             js.put(GTaskStringUtils.GTASK_JSON_ACTION_ID, actionId);
 
-            // index
+            // 任务在列表中的位置
             js.put(GTaskStringUtils.GTASK_JSON_INDEX, mParent.getChildTaskIndex(this));
 
-            // entity_delta
+            // 任务实体数据
             JSONObject entity = new JSONObject();
             entity.put(GTaskStringUtils.GTASK_JSON_NAME, getName());
             entity.put(GTaskStringUtils.GTASK_JSON_CREATOR_ID, "null");
@@ -79,17 +83,17 @@ public class Task extends Node {
             }
             js.put(GTaskStringUtils.GTASK_JSON_ENTITY_DELTA, entity);
 
-            // parent_id
+            // 父列表ID
             js.put(GTaskStringUtils.GTASK_JSON_PARENT_ID, mParent.getGid());
 
-            // dest_parent_type
+            // 父类型
             js.put(GTaskStringUtils.GTASK_JSON_DEST_PARENT_TYPE,
                     GTaskStringUtils.GTASK_JSON_TYPE_GROUP);
 
-            // list_id
+            // 列表ID
             js.put(GTaskStringUtils.GTASK_JSON_LIST_ID, mParent.getGid());
 
-            // prior_sibling_id
+            // 前一个任务ID（排序用）
             if (mPriorSibling != null) {
                 js.put(GTaskStringUtils.GTASK_JSON_PRIOR_SIBLING_ID, mPriorSibling.getGid());
             }
@@ -103,21 +107,24 @@ public class Task extends Node {
         return js;
     }
 
+    /**
+     * 生成更新任务的 JSON 请求
+     */
     public JSONObject getUpdateAction(int actionId) {
         JSONObject js = new JSONObject();
 
         try {
-            // action_type
+            // 操作类型：更新
             js.put(GTaskStringUtils.GTASK_JSON_ACTION_TYPE,
                     GTaskStringUtils.GTASK_JSON_ACTION_TYPE_UPDATE);
 
-            // action_id
+            // 操作ID
             js.put(GTaskStringUtils.GTASK_JSON_ACTION_ID, actionId);
 
-            // id
+            // 任务ID
             js.put(GTaskStringUtils.GTASK_JSON_ID, getGid());
 
-            // entity_delta
+            // 更新内容
             JSONObject entity = new JSONObject();
             entity.put(GTaskStringUtils.GTASK_JSON_NAME, getName());
             if (getNotes() != null) {
@@ -135,35 +142,38 @@ public class Task extends Node {
         return js;
     }
 
+    /**
+     * 从谷歌任务的 JSON 数据解析并填充当前任务
+     */
     public void setContentByRemoteJSON(JSONObject js) {
         if (js != null) {
             try {
-                // id
+                // 设置云端任务ID
                 if (js.has(GTaskStringUtils.GTASK_JSON_ID)) {
                     setGid(js.getString(GTaskStringUtils.GTASK_JSON_ID));
                 }
 
-                // last_modified
+                // 最后修改时间
                 if (js.has(GTaskStringUtils.GTASK_JSON_LAST_MODIFIED)) {
                     setLastModified(js.getLong(GTaskStringUtils.GTASK_JSON_LAST_MODIFIED));
                 }
 
-                // name
+                // 任务标题
                 if (js.has(GTaskStringUtils.GTASK_JSON_NAME)) {
                     setName(js.getString(GTaskStringUtils.GTASK_JSON_NAME));
                 }
 
-                // notes
+                // 任务备注
                 if (js.has(GTaskStringUtils.GTASK_JSON_NOTES)) {
                     setNotes(js.getString(GTaskStringUtils.GTASK_JSON_NOTES));
                 }
 
-                // deleted
+                // 是否删除
                 if (js.has(GTaskStringUtils.GTASK_JSON_DELETED)) {
                     setDeleted(js.getBoolean(GTaskStringUtils.GTASK_JSON_DELETED));
                 }
 
-                // completed
+                // 是否完成
                 if (js.has(GTaskStringUtils.GTASK_JSON_COMPLETED)) {
                     setCompleted(js.getBoolean(GTaskStringUtils.GTASK_JSON_COMPLETED));
                 }
@@ -175,6 +185,9 @@ public class Task extends Node {
         }
     }
 
+    /**
+     * 从本地便签的 JSON 数据解析为任务内容
+     */
     public void setContentByLocalJSON(JSONObject js) {
         if (js == null || !js.has(GTaskStringUtils.META_HEAD_NOTE)
                 || !js.has(GTaskStringUtils.META_HEAD_DATA)) {
@@ -185,11 +198,13 @@ public class Task extends Node {
             JSONObject note = js.getJSONObject(GTaskStringUtils.META_HEAD_NOTE);
             JSONArray dataArray = js.getJSONArray(GTaskStringUtils.META_HEAD_DATA);
 
+            // 只处理普通便签
             if (note.getInt(NoteColumns.TYPE) != Notes.TYPE_NOTE) {
                 Log.e(TAG, "invalid type");
                 return;
             }
 
+            // 从便签内容中提取文本作为任务标题
             for (int i = 0; i < dataArray.length(); i++) {
                 JSONObject data = dataArray.getJSONObject(i);
                 if (TextUtils.equals(data.getString(DataColumns.MIME_TYPE), DataConstants.NOTE)) {
@@ -204,11 +219,14 @@ public class Task extends Node {
         }
     }
 
+    /**
+     * 将任务内容转换为本地便签的 JSON 格式
+     */
     public JSONObject getLocalJSONFromContent() {
         String name = getName();
         try {
             if (mMetaInfo == null) {
-                // new task created from web
+                // 从网页新创建的任务，没有本地元数据，生成新的便签结构
                 if (name == null) {
                     Log.w(TAG, "the note seems to be an empty one");
                     return null;
@@ -225,10 +243,11 @@ public class Task extends Node {
                 js.put(GTaskStringUtils.META_HEAD_NOTE, note);
                 return js;
             } else {
-                // synced task
+                // 已同步任务，更新原有便签内容
                 JSONObject note = mMetaInfo.getJSONObject(GTaskStringUtils.META_HEAD_NOTE);
                 JSONArray dataArray = mMetaInfo.getJSONArray(GTaskStringUtils.META_HEAD_DATA);
 
+                // 替换内容
                 for (int i = 0; i < dataArray.length(); i++) {
                     JSONObject data = dataArray.getJSONObject(i);
                     if (TextUtils.equals(data.getString(DataColumns.MIME_TYPE), DataConstants.NOTE)) {
@@ -247,6 +266,9 @@ public class Task extends Node {
         }
     }
 
+    /**
+     * 设置任务的元数据（保存本地便签原始信息）
+     */
     public void setMetaInfo(MetaData metaData) {
         if (metaData != null && metaData.getNotes() != null) {
             try {
@@ -258,6 +280,10 @@ public class Task extends Node {
         }
     }
 
+    /**
+     * 根据本地数据库游标判断应该执行的同步动作
+     * 返回：同步动作常量（无操作、更新本地、更新云端、冲突等）
+     */
     public int getSyncAction(Cursor c) {
         try {
             JSONObject noteInfo = null;
@@ -275,31 +301,32 @@ public class Task extends Node {
                 return SYNC_ACTION_UPDATE_LOCAL;
             }
 
-            // validate the note id now
+            // 校验便签ID是否匹配
             if (c.getLong(SqlNote.ID_COLUMN) != noteInfo.getLong(NoteColumns.ID)) {
                 Log.w(TAG, "note id doesn't match");
                 return SYNC_ACTION_UPDATE_LOCAL;
             }
 
             if (c.getInt(SqlNote.LOCAL_MODIFIED_COLUMN) == 0) {
-                // there is no local update
+                // 本地无修改
                 if (c.getLong(SqlNote.SYNC_ID_COLUMN) == getLastModified()) {
-                    // no update both side
+                    // 两端都无修改
                     return SYNC_ACTION_NONE;
                 } else {
-                    // apply remote to local
+                    // 以云端为准，更新本地
                     return SYNC_ACTION_UPDATE_LOCAL;
                 }
             } else {
-                // validate gtask id
+                // 校验GTASK ID
                 if (!c.getString(SqlNote.GTASK_ID_COLUMN).equals(getGid())) {
                     Log.e(TAG, "gtask id doesn't match");
                     return SYNC_ACTION_ERROR;
                 }
                 if (c.getLong(SqlNote.SYNC_ID_COLUMN) == getLastModified()) {
-                    // local modification only
+                    // 只有本地修改，同步到云端
                     return SYNC_ACTION_UPDATE_REMOTE;
                 } else {
+                    // 两端都修改，冲突
                     return SYNC_ACTION_UPDATE_CONFLICT;
                 }
             }
@@ -311,6 +338,9 @@ public class Task extends Node {
         return SYNC_ACTION_ERROR;
     }
 
+    /**
+     * 判断任务是否值得保存（有标题或备注就认为有效）
+     */
     public boolean isWorthSaving() {
         return mMetaInfo != null || (getName() != null && getName().trim().length() > 0)
                 || (getNotes() != null && getNotes().trim().length() > 0);

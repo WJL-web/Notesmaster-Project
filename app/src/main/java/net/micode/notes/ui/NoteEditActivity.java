@@ -50,6 +50,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.text.TextWatcher;
+import android.text.Editable;
 import android.widget.Toast;
 
 import net.micode.notes.R;
@@ -71,9 +73,12 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 public class NoteEditActivity extends Activity implements OnClickListener,
         NoteSettingChangedListener, OnTextViewChangeListener {
+
+    // 在这里添加
+    private TextView mWordCountText;
+
     private class HeadViewHolder {
         public TextView tvModified;
 
@@ -162,7 +167,8 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     }
 
     /**
-     * Current activity may be killed when the memory is low. Once it is killed, for another time
+     * Current activity may be killed when the memory is low. Once it is killed, for
+     * another time
      * user load this activity, we should restore the former state
      */
     @Override
@@ -181,7 +187,8 @@ public class NoteEditActivity extends Activity implements OnClickListener,
 
     private boolean initActivityState(Intent intent) {
         /**
-         * If the user specified the {@link Intent#ACTION_VIEW} but not provided with id,
+         * If the user specified the {@link Intent#ACTION_VIEW} but not provided with
+         * id,
          * then jump to the NotesListActivity
          */
         mWorkingNote = null;
@@ -214,7 +221,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
             getWindow().setSoftInputMode(
                     WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN
                             | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        } else if(TextUtils.equals(Intent.ACTION_INSERT_OR_EDIT, intent.getAction())) {
+        } else if (TextUtils.equals(Intent.ACTION_INSERT_OR_EDIT, intent.getAction())) {
             // New note
             long folderId = intent.getLongExtra(Notes.INTENT_EXTRA_FOLDER_ID, 0);
             int widgetId = intent.getIntExtra(Notes.INTENT_EXTRA_WIDGET_ID,
@@ -289,7 +296,8 @@ public class NoteEditActivity extends Activity implements OnClickListener,
                         | DateUtils.FORMAT_SHOW_YEAR));
 
         /**
-         * TODO: Add the menu for setting alert. Currently disable it because the DateTimePicker
+         * TODO: Add the menu for setting alert. Currently disable it because the
+         * DateTimePicker
          * is not ready
          */
         showAlertHeader();
@@ -309,7 +317,8 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         } else {
             mNoteHeaderHolder.tvAlertDate.setVisibility(View.GONE);
             mNoteHeaderHolder.ivAlertIcon.setVisibility(View.GONE);
-        };
+        }
+        ;
     }
 
     @Override
@@ -350,7 +359,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     }
 
     private boolean inRangeOfView(View view, MotionEvent ev) {
-        int []location = new int[2];
+        int[] location = new int[2];
         view.getLocationOnScreen(location);
         int x = location[0];
         int y = location[1];
@@ -358,8 +367,8 @@ public class NoteEditActivity extends Activity implements OnClickListener,
                 || ev.getX() > (x + view.getWidth())
                 || ev.getY() < y
                 || ev.getY() > (y + view.getHeight())) {
-                    return false;
-                }
+            return false;
+        }
         return true;
     }
 
@@ -374,6 +383,31 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         mNoteEditor = (EditText) findViewById(R.id.note_edit_view);
         mNoteEditorPanel = findViewById(R.id.sv_note_edit);
         mNoteBgColorSelector = findViewById(R.id.note_bg_color_selector);
+
+        // --- 新增：初始化字数统计控件 ---
+        mWordCountText = (TextView) findViewById(R.id.tv_word_count);
+        
+        // --- 新增：绑定字数统计监听逻辑 ---
+        if (mNoteEditor != null && mWordCountText != null) {
+            mNoteEditor.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    // 实时更新：s.length() 会自动计算中英文字符数量
+                    int len = (s != null) ? s.length() : 0;
+                    mWordCountText.setText("字数: " + len);
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+
+            // 初始显示一次（处理打开旧便签的情况）
+            mWordCountText.setText("字数: " + mNoteEditor.getText().length());
+        }
+
         for (int id : sBgSelectorBtnsMap.keySet()) {
             ImageView iv = (ImageView) findViewById(id);
             iv.setOnClickListener(this);
@@ -383,15 +417,12 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         for (int id : sFontSizeBtnsMap.keySet()) {
             View view = findViewById(id);
             view.setOnClickListener(this);
-        };
+        }
+        
         mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
         mFontSizeId = mSharedPrefs.getInt(PREFERENCE_FONT_SIZE, ResourceParser.BG_DEFAULT_FONT_SIZE);
-        /**
-         * HACKME: Fix bug of store the resource id in shared preference.
-         * The id may larger than the length of resources, in this case,
-         * return the {@link ResourceParser#BG_DEFAULT_FONT_SIZE}
-         */
-        if(mFontSizeId >= TextAppearanceResources.getResourcesSize()) {
+        
+        if (mFontSizeId >= TextAppearanceResources.getResourcesSize()) {
             mFontSizeId = ResourceParser.BG_DEFAULT_FONT_SIZE;
         }
         mEditTextList = (LinearLayout) findViewById(R.id.note_edit_list);
@@ -400,7 +431,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     @Override
     protected void onPause() {
         super.onPause();
-        if(saveNote()) {
+        if (saveNote()) {
             Log.d(TAG, "Note data was saved with length:" + mWorkingNote.getContent().length());
         }
         clearSettingState();
@@ -418,7 +449,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         }
 
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[] {
-            mWorkingNote.getWidgetId()
+                mWorkingNote.getWidgetId()
         });
 
         sendBroadcast(intent);
@@ -454,7 +485,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
 
     @Override
     public void onBackPressed() {
-        if(clearSettingState()) {
+        if (clearSettingState()) {
             return;
         }
 
@@ -529,8 +560,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
             mFontSizeSelector.setVisibility(View.VISIBLE);
             findViewById(sFontSelectorSelectionMap.get(mFontSizeId)).setVisibility(View.VISIBLE);
         } else if (id == R.id.menu_list_mode) {
-            mWorkingNote.setCheckListMode(mWorkingNote.getCheckListMode() == 0 ?
-                    TextNote.MODE_CHECK_LIST : 0);
+            mWorkingNote.setCheckListMode(mWorkingNote.getCheckListMode() == 0 ? TextNote.MODE_CHECK_LIST : 0);
         } else if (id == R.id.menu_share) {
             getWorkingText();
             sendTo(this, mWorkingNote.getContent());
@@ -549,7 +579,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         DateTimePickerDialog d = new DateTimePickerDialog(this, System.currentTimeMillis());
         d.setOnDateTimeSetListener(new OnDateTimeSetListener() {
             public void OnDateTimeSet(AlertDialog dialog, long date) {
-                mWorkingNote.setAlertDate(date	, true);
+                mWorkingNote.setAlertDate(date, true);
             }
         });
         d.show();
@@ -629,7 +659,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
             AlarmManager alarmManager = ((AlarmManager) getSystemService(ALARM_SERVICE));
             showAlertHeader();
 
-            if(!set) {
+            if (!set) {
                 alarmManager.cancel(pendingIntent);
             } else {
                 alarmManager.set(AlarmManager.RTC_WAKEUP, date, pendingIntent);
@@ -662,7 +692,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
 
         mEditTextList.removeViewAt(index);
         NoteEditText edit = null;
-        if(index == 0) {
+        if (index == 0) {
             edit = (NoteEditText) mEditTextList.getChildAt(0).findViewById(
                     R.id.et_edit_text);
         } else {
@@ -679,7 +709,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         /**
          * Should not happen, check for debug
          */
-        if(index > mEditTextList.getChildCount()) {
+        if (index > mEditTextList.getChildCount()) {
             Log.e(TAG, "Index out of mEditTextList boundrary, should not happen");
         }
 
@@ -699,7 +729,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         String[] items = text.split("\n");
         int index = 0;
         for (String item : items) {
-            if(!TextUtils.isEmpty(item)) {
+            if (!TextUtils.isEmpty(item)) {
                 mEditTextList.addView(getListItem(item, index));
                 index++;
             }
@@ -720,7 +750,8 @@ public class NoteEditActivity extends Activity implements OnClickListener,
             while (m.find(start)) {
                 spannable.setSpan(
                         new BackgroundColorSpan(this.getResources().getColor(
-                                R.color.user_query_highlight)), m.start(), m.end(),
+                                R.color.user_query_highlight)),
+                        m.start(), m.end(),
                         Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
                 start = m.end();
             }
@@ -764,7 +795,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
             Log.e(TAG, "Wrong index, should not happen");
             return;
         }
-        if(hasText) {
+        if (hasText) {
             mEditTextList.getChildAt(index).findViewById(R.id.cb_edit_item).setVisibility(View.VISIBLE);
         } else {
             mEditTextList.getChildAt(index).findViewById(R.id.cb_edit_item).setVisibility(View.GONE);

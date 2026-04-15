@@ -373,60 +373,66 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     }
 
     private void initResources() {
-        mHeadViewPanel = findViewById(R.id.note_title);
-        mNoteHeaderHolder = new HeadViewHolder();
-        mNoteHeaderHolder.tvModified = (TextView) findViewById(R.id.tv_modified_date);
-        mNoteHeaderHolder.ivAlertIcon = (ImageView) findViewById(R.id.iv_alert_icon);
-        mNoteHeaderHolder.tvAlertDate = (TextView) findViewById(R.id.tv_alert_date);
-        mNoteHeaderHolder.ibSetBgColor = (ImageView) findViewById(R.id.btn_set_bg_color);
-        mNoteHeaderHolder.ibSetBgColor.setOnClickListener(this);
-        mNoteEditor = (EditText) findViewById(R.id.note_edit_view);
-        mNoteEditorPanel = findViewById(R.id.sv_note_edit);
-        mNoteBgColorSelector = findViewById(R.id.note_bg_color_selector);
+    mHeadViewPanel = findViewById(R.id.note_title);
+    mNoteHeaderHolder = new HeadViewHolder();
+    mNoteHeaderHolder.tvModified = (TextView) findViewById(R.id.tv_modified_date);
+    mNoteHeaderHolder.ivAlertIcon = (ImageView) findViewById(R.id.iv_alert_icon);
+    mNoteHeaderHolder.tvAlertDate = (TextView) findViewById(R.id.tv_alert_date);
+    mNoteHeaderHolder.ibSetBgColor = (ImageView) findViewById(R.id.btn_set_bg_color);
+    mNoteHeaderHolder.ibSetBgColor.setOnClickListener(this);
+    mNoteEditor = (EditText) findViewById(R.id.note_edit_view);
+    mNoteEditorPanel = findViewById(R.id.sv_note_edit);
+    mNoteBgColorSelector = findViewById(R.id.note_bg_color_selector);
 
-        // --- 新增：初始化字数统计控件 ---
-        mWordCountText = (TextView) findViewById(R.id.tv_word_count);
-        
-        // --- 新增：绑定字数统计监听逻辑 ---
-        if (mNoteEditor != null && mWordCountText != null) {
-            mNoteEditor.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+    // --- 新增：初始化字数统计控件 ---
+    mWordCountText = (TextView) findViewById(R.id.tv_word_count);
+    
+    // --- 修改：绑定字数统计监听逻辑（排除所有空白字符） ---
+    if (mNoteEditor != null && mWordCountText != null) {
+        mNoteEditor.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    // 实时更新：s.length() 会自动计算中英文字符数量
-                    int len = (s != null) ? s.length() : 0;
-                    mWordCountText.setText("字数: " + len);
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                int len = 0;
+                if (s != null) {
+                    // 使用正则表达式 \\s 匹配所有空格、换行、制表符并替换为空
+                    len = s.toString().replaceAll("\\s+", "").length();
                 }
+                mWordCountText.setText("字数: " + len);
+            }
 
-                @Override
-                public void afterTextChanged(Editable s) {}
-            });
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
 
-            // 初始显示一次（处理打开旧便签的情况）
-            mWordCountText.setText("字数: " + mNoteEditor.getText().length());
+        // 初始显示也采用同样的排除逻辑
+        if (mNoteEditor.getText() != null) {
+            int initialLen = mNoteEditor.getText().toString().replaceAll("\\s+", "").length();
+            mWordCountText.setText("字数: " + initialLen);
         }
-
-        for (int id : sBgSelectorBtnsMap.keySet()) {
-            ImageView iv = (ImageView) findViewById(id);
-            iv.setOnClickListener(this);
-        }
-
-        mFontSizeSelector = findViewById(R.id.font_size_selector);
-        for (int id : sFontSizeBtnsMap.keySet()) {
-            View view = findViewById(id);
-            view.setOnClickListener(this);
-        }
-        
-        mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        mFontSizeId = mSharedPrefs.getInt(PREFERENCE_FONT_SIZE, ResourceParser.BG_DEFAULT_FONT_SIZE);
-        
-        if (mFontSizeId >= TextAppearanceResources.getResourcesSize()) {
-            mFontSizeId = ResourceParser.BG_DEFAULT_FONT_SIZE;
-        }
-        mEditTextList = (LinearLayout) findViewById(R.id.note_edit_list);
     }
+
+    for (int id : sBgSelectorBtnsMap.keySet()) {
+        ImageView iv = (ImageView) findViewById(id);
+        iv.setOnClickListener(this);
+    }
+
+    mFontSizeSelector = findViewById(R.id.font_size_selector);
+    for (int id : sFontSizeBtnsMap.keySet()) {
+        View view = findViewById(id);
+        view.setOnClickListener(this);
+    }
+    
+    mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+    mFontSizeId = mSharedPrefs.getInt(PREFERENCE_FONT_SIZE, ResourceParser.BG_DEFAULT_FONT_SIZE);
+    
+    if (mFontSizeId >= TextAppearanceResources.getResourcesSize()) {
+        mFontSizeId = ResourceParser.BG_DEFAULT_FONT_SIZE;
+    }
+    mEditTextList = (LinearLayout) findViewById(R.id.note_edit_list);
+}
 
     @Override
     protected void onPause() {

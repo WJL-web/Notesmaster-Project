@@ -31,7 +31,7 @@ import net.micode.notes.data.Notes.NoteColumns;
 import net.micode.notes.data.Notes.TextNote;
 import net.micode.notes.tool.ResourceParser.NoteBgResources;
 
-/* WorkingNote class - Main operation class for note management */
+// WorkingNote class - Main operation class for note management
 /* 工作笔记类 - 笔记的主要操作类，负责笔记的加载、保存、修改等核心功能 */
 public class WorkingNote {
     // Note for the working note
@@ -76,7 +76,7 @@ public class WorkingNote {
     /* 笔记设置变化监听器 */
     private NoteSettingChangedListener mNoteSettingStatusListener;
 
-    /* Data projection for query - defines which columns to query from data table */
+    // Data projection for query - defines which columns to query from data table
     /* 数据表查询投影 - 定义要查询的数据列，用于查询笔记的详细内容数据 */
     public static final String[] DATA_PROJECTION = new String[] {
             DataColumns.ID,
@@ -88,7 +88,7 @@ public class WorkingNote {
             DataColumns.DATA4,
     };
 
-    /* Note projection for query - defines which columns to query from note table */
+    // Note projection for query - defines which columns to query from note table
     /* 笔记表查询投影 - 定义要查询的笔记列，用于查询笔记的基本信息 */
     public static final String[] NOTE_PROJECTION = new String[] {
             NoteColumns.PARENT_ID,
@@ -99,14 +99,14 @@ public class WorkingNote {
             NoteColumns.MODIFIED_DATE
     };
 
-    /* Data table column index constants */
+    // Data table column index constants
     /* 数据表列索引常量 */
     private static final int DATA_ID_COLUMN = 0;
     private static final int DATA_CONTENT_COLUMN = 1;
     private static final int DATA_MIME_TYPE_COLUMN = 2;
     private static final int DATA_MODE_COLUMN = 3;
 
-    /* Note table column index constants */
+    // Note table column index constants
     /* 笔记表列索引常量 */
     private static final int NOTE_PARENT_ID_COLUMN = 0;
     private static final int NOTE_ALERTED_DATE_COLUMN = 1;
@@ -145,7 +145,7 @@ public class WorkingNote {
         loadNote();
     }
 
-    /* Load note basic info from database */
+    // Load note basic info from database
     /* 从数据库加载笔记的基本信息（背景色、提醒时间等属性） */
     private void loadNote() {
         Cursor cursor = mContext.getContentResolver().query(
@@ -169,7 +169,7 @@ public class WorkingNote {
         loadNoteData();
     }
 
-    /* Load note detail data (text content, call records, etc.) */
+    // Load note detail data (text content, call records, etc.)
     /* 加载笔记的详细数据（文本内容、通话记录等） */
     private void loadNoteData() {
         Cursor cursor = mContext.getContentResolver().query(Notes.CONTENT_DATA_URI, DATA_PROJECTION,
@@ -199,7 +199,7 @@ public class WorkingNote {
         }
     }
 
-    /* Factory method - create empty note */
+    // Factory method - create empty note
     /* 工厂方法 - 创建空笔记 */
     /* @param context 上下文 */
     /* @param folderId 文件夹ID */
@@ -216,7 +216,7 @@ public class WorkingNote {
         return note;
     }
 
-    /* Factory method - load existing note */
+    // Factory method - load existing note
     /* 工厂方法 - 加载已有笔记 */
     /* @param context 上下文 */
     /* @param id 笔记ID */
@@ -225,7 +225,7 @@ public class WorkingNote {
         return new WorkingNote(context, id, 0);
     }
 
-    /* Save note to database */
+    // Save note to database
     /* 保存笔记到数据库 */
     /* @return true保存成功，false保存失败 */
     public synchronized boolean saveNote() {
@@ -254,14 +254,14 @@ public class WorkingNote {
         }
     }
 
-    /* Check if note exists in database */
+    // Check if note exists in database
     /* 检查笔记是否已存在于数据库中 */
     /* @return true存在，false不存在 */
     public boolean existInDatabase() {
         return mNoteId > 0;
     }
 
-    /* Check if note needs to be saved */
+    // Check if note needs to be saved
     /* 判断笔记是否需要保存 */
     /* @return true需要保存，false无需保存 */
     private boolean isWorthSaving() {
@@ -273,14 +273,14 @@ public class WorkingNote {
         }
     }
 
-    /* Set note setting change listener */
+    // Set note setting change listener
     /* 设置笔记设置变化监听器 */
     /* @param l 监听器对象 */
     public void setOnSettingStatusChangedListener(NoteSettingChangedListener l) {
         mNoteSettingStatusListener = l;
     }
 
-    /* Set alert date */
+    // Set alert date
     /* 设置提醒日期 */
     /* @param date 提醒日期时间戳 */
     /* @param set 是否设置提醒 */
@@ -294,7 +294,7 @@ public class WorkingNote {
         }
     }
 
-    /* Mark note as deleted */
+    // Mark note as deleted
     /* 标记删除笔记 */
     /* @param mark true标记删除，false取消删除标记 */
     public void markDeleted(boolean mark) {
@@ -305,7 +305,7 @@ public class WorkingNote {
         }
     }
 
-    /* Set note background color */
+    // Set note background color
     /* 设置笔记背景颜色 */
     /* @param id 背景颜色资源ID */
     public void setBgColorId(int id) {
@@ -318,7 +318,7 @@ public class WorkingNote {
         }
     }
 
-    /* Set check list mode (normal mode / todo list mode) */
+    // Set check list mode (normal mode / todo list mode)
     /* 设置清单模式（普通模式/待办清单模式） */
     /* @param mode 模式代码 */
     public void setCheckListMode(int mode) {
@@ -331,7 +331,7 @@ public class WorkingNote {
         }
     }
 
-    /* Set widget type */
+    // Set widget type
     /* 设置小部件类型 */
     /* @param type 小部件类型 */
     public void setWidgetType(int type) {
@@ -341,7 +341,7 @@ public class WorkingNote {
         }
     }
 
-    /* Set widget id */
+    // Set widget id
     /* 设置小部件ID */
     /* @param id 小部件ID */
     public void setWidgetId(int id) {
@@ -351,7 +351,7 @@ public class WorkingNote {
         }
     }
 
-    /* Set note content */
+    // Set note content
     /* 设置笔记内容 */
     /* @param text 笔记文本内容 */
     public void setWorkingText(String text) {
@@ -361,7 +361,7 @@ public class WorkingNote {
         }
     }
 
-    /* Convert to call record note */
+    // Convert to call record note
     /* 转换为通话记录笔记 */
     /* @param phoneNumber 电话号码 */
     /* @param callDate 通话日期 */
@@ -371,15 +371,15 @@ public class WorkingNote {
         mNote.setNoteValue(NoteColumns.PARENT_ID, String.valueOf(Notes.ID_CALL_RECORD_FOLDER));
     }
 
-    /* Check if has clock alert */
+    // Check if has clock alert
     /* 检查是否有时钟提醒 */
     /* @return true有提醒，false无提醒 */
     public boolean hasClockAlert() {
         return (mAlertDate > 0 ? true : false);
     }
 
-    /* Getter methods */
-    /* Getter 方法 */
+    // Getter methods
+    /* Getter 方法 - 获取笔记属性 */
     public String getContent() {
         return mContent;
     }
@@ -392,7 +392,7 @@ public class WorkingNote {
         return mModifiedDate;
     }
 
-    /* Get background color resource id */
+    // Get background color resource id
     /* 获取背景颜色资源ID */
     /* @return 背景颜色资源 */
     public int getBgColorResId() {
@@ -403,7 +403,7 @@ public class WorkingNote {
         return mBgColorId;
     }
 
-    /* Get title bar background resource id */
+    // Get title bar background resource id
     /* 获取标题栏背景资源ID */
     /* @return 标题背景颜色资源 */
     public int getTitleBgResId() {

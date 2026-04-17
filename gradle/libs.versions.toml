@@ -1,22 +1,56 @@
+# ====================== 版本号定义区 ======================
+# 这里集中定义所有依赖和插件的版本号，方便统一升级
 [versions]
+# Android Gradle Plugin (AGP) 版本：9.1.0
 agp = "9.1.0"
+
+# JUnit 单元测试库版本
 junit = "4.13.2"
+
+# AndroidX JUnit 扩展版本
 junitVersion = "1.1.5"
+
+# Espresso 自动化测试库版本
 espressoCore = "3.5.1"
+
+# AndroidX AppCompat 兼容库版本
 appcompat = "1.6.1"
+
+# Material Design 组件库版本
 material = "1.10.0"
+
+# AndroidX Activity 库版本
 activity = "1.8.0"
+
+# ConstraintLayout 约束布局库版本
 constraintlayout = "2.1.4"
 
+# ====================== 库依赖定义区 ======================
+# 这里定义具体的库依赖，引用上面 [versions] 里的版本号
 [libraries]
+# JUnit 单元测试库
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+
+# AndroidX JUnit 测试扩展
 ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+
+# Espresso 自动化 UI 测试库
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+
+# AndroidX AppCompat 兼容库（提供 ActionBar、主题兼容等）
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+
+# Material Design 组件库（提供 Button、Card、TextField 等 Material 风格组件）
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+
+# AndroidX Activity 库（提供更现代的 Activity API）
 activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+
+# ConstraintLayout 约束布局库（灵活布局 UI）
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
+# ====================== 插件定义区 ======================
+# 这里定义 Gradle 插件，引用上面 [versions] 里的版本号
 [plugins]
+# Android 应用插件（用于构建 Android APP）
 android-application = { id = "com.android.application", version.ref = "agp" }
-

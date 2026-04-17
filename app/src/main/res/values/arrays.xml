@@ -1,31 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!-- Copyright (c) 2010-2011, The MiCode Open Source Community (www.micode.net)
-
-     Licensed under the Apache License, Version 2.0 (the "License");
-     you may not use this file except in compliance with the License.
-     You may obtain a copy of the License at
-
-          http://www.apache.org/licenses/LICENSE-2.0
-
-     Unless required by applicable law or agreed to in writing, software
-     distributed under the License is distributed on an "AS IS" BASIS,
-     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-     See the License for the specific language governing permissions and
-     limitations under the License.
+<!--
+  字符串数组资源配置文件
+  作用：
+  1. 定义便签【备份/导出】的文本格式
+  2. 定义【分享方式】菜单数组
 -->
 
+<!-- Copyright (c) 2010-2011, The MiCode Open Source Community (www.micode.net) -->
 <resources>
-    <!-- Backup format -->
+
+    <!-- ====================== 便签导出/备份格式 ====================== -->
     <string-array name="format_for_exported_note">
-        <item>-%s</item>      <!-- format_folder_name -->
-        <item>--%s</item>     <!-- format_folder_note_date -->
-        <item>--%s</item>     <!-- format_note_date -->
-        <item>--%s</item>     <!-- format_note_content -->
+        <item>-%s</item>      <!-- 文件夹名称格式（前缀：-） -->
+        <item>--%s</item>     <!-- 文件夹下便签：日期格式（前缀：-） -->
+        <item>--%s</item>     <!-- 普通便签：日期格式（前缀：-） -->
+        <item>--%s</item>     <!-- 便签内容格式（前缀：-） -->
     </string-array>
 
+    <!-- ====================== 分享方式菜单 ====================== -->
     <string-array name="menu_share_ways">
-        <item>Messaging</item>
-        <item>Email</item>
+        <item>Messaging</item>  <!-- 短信分享 -->
+        <item>Email</item>      <!-- 邮件分享 -->
     </string-array>
+
 </resources>

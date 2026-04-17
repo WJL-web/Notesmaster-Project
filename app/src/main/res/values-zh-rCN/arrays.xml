@@ -1,23 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!-- Copyright (c) 2010-2011, The MiCode Open Source Community (www.micode.net)
-
-     Licensed under the Apache License, Version 2.0 (the "License");
-     you may not use this file except in compliance with the License.
-     You may obtain a copy of the License at
-
-          http://www.apache.org/licenses/LICENSE-2.0
-
-     Unless required by applicable law or agreed to in writing, software
-     distributed under the License is distributed on an "AS IS" BASIS,
-     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-     See the License for the specific language governing permissions and
-     limitations under the License.
+<!--
+  中文本地化字符串数组
+  对应：values-zh/arrays.xml
+  作用：便签【分享方式】菜单中文显示
 -->
 
+<!-- Copyright (c) 2010-2011, The MiCode Open Source Community (www.micode.net) -->
 <resources>
+
+    <!-- 分享方式菜单（中文） -->
     <string-array name="menu_share_ways">
-        <item>短信</item>
-        <item>邮件</item>
+        <item>短信</item>    <!-- 分享到短信 -->
+        <item>邮件</item>    <!-- 分享到邮件 -->
     </string-array>
+
 </resources>

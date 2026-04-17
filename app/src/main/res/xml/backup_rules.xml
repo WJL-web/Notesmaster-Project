@@ -1,13 +1,23 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  【系统自动备份配置文件】
+  作用：配置 APP 的数据自动备份规则（备份到 Google Drive / 手机云服务）
+  说明：
+  1. API 31（Android 12）及以上系统才会生效
+  2. 目前是模板状态，没有启用任何备份规则
 -->
+
 <full-backup-content>
+
     <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+      示例1：包含（备份）所有 SharedPreferences（配置文件）
+    -->
+    <!-- <include domain="sharedpref" path="."/> -->
+
+    <!--
+      示例2：排除（不备份）某个特定配置文件
+    -->
+    <!-- <exclude domain="sharedpref" path="device.xml"/> -->
+
 </full-backup-content>

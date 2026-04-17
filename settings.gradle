@@ -1,26 +1,189 @@
+// ==============================================================================
+// Gradle 项目设置文件 (settings.gradle)
+// ==============================================================================
+//
+// 本文件是 Gradle 构建系统的主要配置文件之一，用于：
+// 1. 配置插件管理仓库（pluginManagement）
+// 2. 配置依赖解析仓库（dependencyResolutionManagement）
+// 3. 声明项目名称和包含的子模块
+//
+// 执行时机：在构建过程的最开始阶段执行，早于所有 build.gradle 文件
+//
+// 文件结构：
+// - pluginManagement：管理 Gradle 插件的下载和解析
+// - dependencyResolutionManagement：管理项目依赖的仓库
+// - rootProject.name：设置根项目名称
+// - include：声明包含的子模块
+//
+// 官方文档：
+// https://docs.gradle.org/current/userguide/directory_layout.html
+// ==============================================================================
+
+// ------------------------------------------------------------------------------
+// 插件管理区块
+// ------------------------------------------------------------------------------
+// 配置 Gradle 插件的仓库和解析规则
+// 插件在使用前需要从这些仓库中下载
 pluginManagement {
+
+    // 插件仓库配置
     repositories {
+        // Google Maven 仓库
+        // 包含 Android 相关的插件和库
+        // 如：com.android.application、com.android.library
         google {
+            // 内容过滤配置
+            // 只允许符合特定正则表达式的依赖组从该仓库下载
             content {
+                // 匹配 com.android.* 开头的组
+                // 例如：com.android.application、com.android.tools.build
                 includeGroupByRegex("com\\.android.*")
+
+                // 匹配 com.google.* 开头的组
+                // 例如：com.google.gms、com.google.firebase
                 includeGroupByRegex("com\\.google.*")
+
+                // 匹配 androidx.* 开头的组
+                // 例如：androidx.appcompat、androidx.core
                 includeGroupByRegex("androidx.*")
             }
         }
+
+        // Maven Central 仓库
+        // 社区公共仓库，包含大量开源库
+        // 例如：JUnit、OkHttp、Retrofit 等
         mavenCentral()
+
+        // Gradle 官方插件门户
+        // 包含 Gradle 官方和社区发布的插件
+        // 例如：org.gradle.toolchains.foojay-resolver-convention
         gradlePluginPortal()
     }
 }
+
+// ------------------------------------------------------------------------------
+// 插件声明区块
+// ------------------------------------------------------------------------------
+// 声明项目使用的插件
+// 这里的插件会在构建开始前被解析和应用
 plugins {
+    // Foojay 工具链解析器插件
+    // 用于自动下载和管理 Java 工具链（JDK）
+    // 版本：1.0.0
+    // 功能：当项目需要特定版本的 JDK 时，自动从 Foojay 下载
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
+
+// ------------------------------------------------------------------------------
+// 依赖解析管理区块
+// ------------------------------------------------------------------------------
+// 配置项目依赖的仓库和解析策略
+// 影响所有子模块的依赖解析
 dependencyResolutionManagement {
+
+    // 仓库模式设置
+    // RepositoriesMode.FAIL_ON_PROJECT_REPOS：严格模式
+    // - 强制所有子模块使用此处定义的仓库
+    // - 如果在子模块的 build.gradle 中再次定义仓库，构建会失败
+    // - 确保依赖来源的统一性和可重现性
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+
+    // 依赖仓库配置
     repositories {
+        // Google Maven 仓库
+        // 包含 AndroidX、Google Play Services 等
         google()
+
+        // Maven Central 仓库
+        // 包含大多数开源 Java/Kotlin 库
         mavenCentral()
+
+        // 注意：此处未配置 JCenter（已废弃）
+        // 注意：如需自定义仓库，可在此添加，例如：
+        // maven { url = "https://jitpack.io" }
     }
 }
 
+// ------------------------------------------------------------------------------
+// 项目基本信息配置
+// ------------------------------------------------------------------------------
+
+// 根项目名称
+// 影响：
+// - 构建输出目录名称
+// - Gradle 缓存路径
+// - IDEA/Eclipse 项目名称
 rootProject.name = "Notesmaster"
+
+// 包含的子模块声明
+// 每个被包含的模块必须在其目录下包含 build.gradle 文件
+// 格式：include ':模块名' 或 include '模块名'
+// 
+// 单层模块示例：
+// include ':app'
+// include ':library'
+//
+// 嵌套模块示例：
+// include ':core:network'
+// include ':core:database'
+// include ':feature:login'
 include ':app'
+
+
+// ==============================================================================
+// 扩展配置示例（未使用，仅供参考）
+// ==============================================================================
+
+// ------------------------------------------------------------------------------
+// 多模块项目配置示例
+// ------------------------------------------------------------------------------
+// 如果有多个模块，可以这样声明：
+// 
+// include ':app'
+// include ':core:common'
+// include ':core:network'
+// include ':core:database'
+// include ':feature:home'
+// include ':feature:profile'
+// include ':feature:settings'
+// 
+// 注意：模块路径必须与实际目录结构匹配
+// 例如 ':core:common' 对应目录：core/common/
+// ------------------------------------------------------------------------------
+
+// ------------------------------------------------------------------------------
+// 自定义仓库配置示例
+// ------------------------------------------------------------------------------
+// 如果需要使用自建 Maven 仓库或 JitPack：
+// 
+// repositories {
+//     google()
+//     mavenCentral()
+//     
+//     // 自建私有仓库
+//     maven {
+//         url = "https://your-private-repo.com/maven"
+//         credentials {
+//             username = project.findProperty("repo.user") ?: ""
+//             password = project.findProperty("repo.password") ?: ""
+//         }
+//     }
+//     
+//     // JitPack 仓库（用于 GitHub 上的库）
+//     maven { url = "https://jitpack.io" }
+// }
+// ------------------------------------------------------------------------------
+
+// ------------------------------------------------------------------------------
+// 版本目录配置示例（可选）
+// ------------------------------------------------------------------------------
+// 如果使用版本目录（Version Catalog）：
+// 
+// dependencyResolutionManagement {
+//     versionCatalogs {
+//         create("libs") {
+//             from(files("gradle/libs.versions.toml"))
+//         }
+//     }
+// }
+// ------------------------------------------------------------------------------

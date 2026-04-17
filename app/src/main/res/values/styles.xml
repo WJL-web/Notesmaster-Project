@@ -1,55 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!-- Copyright (c) 2010-2011, The MiCode Open Source Community (www.micode.net)
-
-     Licensed under the Apache License, Version 2.0 (the "License");
-     you may not use this file except in compliance with the License.
-     You may obtain a copy of the License at
-
-          http://www.apache.org/licenses/LICENSE-2.0
-
-     Unless required by applicable law or agreed to in writing, software
-     distributed under the License is distributed on an "AS IS" BASIS,
-     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-     See the License for the specific language governing permissions and
-     limitations under the License.
+<!--
+  全局样式定义文件
+  作用：统一便签内的文字大小、颜色、列表样式、APP主题
 -->
 
 <resources>
+    <!-- ====================== 便签编辑页 文字大小样式 ====================== -->
+    <!-- 超大字体 -->
     <style name="TextAppearanceSuper">
         <item name="android:textSize">@dimen/text_font_size_super</item>
         <item name="android:textColorLink">#0000ff</item>
     </style>
+
+    <!-- 大字体 -->
     <style name="TextAppearanceLarge">
         <item name="android:textSize">@dimen/text_font_size_large</item>
         <item name="android:textColorLink">#0000ff</item>
     </style>
+
+    <!-- 中字体 -->
     <style name="TextAppearanceMedium">
         <item name="android:textSize">@dimen/text_font_size_medium</item>
         <item name="android:textColorLink">#0000ff</item>
     </style>
+
+    <!-- 正常字体（默认） -->
     <style name="TextAppearanceNormal">
         <item name="android:textSize">@dimen/text_font_size_normal</item>
         <item name="android:textColorLink">#0000ff</item>
     </style>
 
+    <!-- ====================== 列表项 文字样式 ====================== -->
+    <!-- 主标题（便签第一行） -->
     <style name="TextAppearancePrimaryItem">
         <item name="android:textSize">@dimen/text_font_size_normal</item>
         <item name="android:textColor">@color/primary_text_dark</item>
     </style>
 
+    <!-- 次要文字（便签日期/内容预览） -->
     <style name="TextAppearanceSecondaryItem">
         <item name="android:textSize">@dimen/text_font_size_small</item>
         <item name="android:textColor">@color/secondary_text_dark</item>
     </style>
 
+    <!-- ====================== 菜单图标下方文字 ====================== -->
     <style name="TextAppearanceUnderMenuIcon">
         <item name="android:textSize">@dimen/text_font_size_normal</item>
         <item name="android:textColor">@android:color/black</item>
     </style>
 
+    <!-- ====================== 搜索高亮文字样式 ====================== -->
     <style name="HighlightTextAppearancePrimary">
-    <item name="android:textSize">@dimen/text_font_size_normal</item>
+        <item name="android:textSize">@dimen/text_font_size_normal</item>
         <item name="android:textColor">@color/primary_text_dark</item>
     </style>
 
@@ -58,12 +61,17 @@
         <item name="android:textColor">@color/secondary_text_dark</item>
     </style>
 
+    <!-- ====================== APP 全局主题 ====================== -->
+    <!-- 便签APP主题：使用 Holo.Light 浅色主题 -->
     <style name="NoteTheme" parent="@android:style/Theme.Holo.Light">
         <item name="android:actionBarStyle">@style/NoteActionBarStyle</item>
     </style>
 
+    <!-- ====================== ActionBar 样式（直接隐藏） ====================== -->
     <style name="NoteActionBarStyle" parent="@android:style/Widget.Holo.Light.ActionBar.Solid">
+        <!-- 不显示任何标题/图标 -->
         <item name="android:displayOptions" />
+        <!-- 隐藏系统 ActionBar（便签用自己的顶部栏） -->
         <item name="android:visibility">gone</item>
     </style>
 </resources>

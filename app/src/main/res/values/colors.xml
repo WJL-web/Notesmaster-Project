@@ -1,20 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!-- Copyright (c) 2010-2011, The MiCode Open Source Community (www.micode.net)
-
-     Licensed under the Apache License, Version 2.0 (the "License");
-     you may not use this file except in compliance with the License.
-     You may obtain a copy of the License at
-
-          http://www.apache.org/licenses/LICENSE-2.0
-
-     Unless required by applicable law or agreed to in writing, software
-     distributed under the License is distributed on an "AS IS" BASIS,
-     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-     See the License for the specific language governing permissions and
-     limitations under the License.
+<!--
+ * Copyright (c) 2010-2011, The MiCode Open Source Community (www.micode.net)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
 -->
 
+<!--
+    ============================================================================
+    颜色资源文件 (colors.xml)
+    ============================================================================
+
+    本文件定义了应用中使用的自定义颜色值。
+    将颜色值定义为资源的好处：
+    - 便于统一管理和修改颜色主题
+    - 支持不同主题/屏幕尺寸的颜色适配
+    - 避免硬编码颜色值，提高代码可维护性
+
+    注意：本文件只包含了一个颜色定义，其他颜色可能在其他文件中定义
+    或直接在布局/代码中使用了 Android 系统内置颜色。
+    ============================================================================
+-->
 <resources>
-    <color name="user_query_highlight">#335b5b5b</color>
+    <color name="user_query_highlight">#FFFF00</color>
 </resources>

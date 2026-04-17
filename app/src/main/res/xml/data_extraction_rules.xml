@@ -1,19 +1,35 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    data-extraction-rules.xml - 数据提取规则文件
+
+    作用：定义应用数据备份的包含/排除规则
+    适用于：Android 12 (API 31) 及更高版本
+
+    参考文档：https://developer.android.com/about/versions/12/backup-restore#xml-changes
 -->
+
 <data-extraction-rules>
+
+    <!-- 云备份规则 -->
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
+        <!--
+            TODO: 使用 <include> 和 <exclude> 控制哪些数据被备份
+
+            <include domain="database" path="." />  - 备份所有数据库
+            <include domain="sharedpref" path="." /> - 备份所有SharedPreferences
+            <exclude domain="file" path="cache/" />  - 排除缓存文件夹
         -->
     </cloud-backup>
+
+    <!--
+        设备传输规则（Android 12+）
+        用于设备到设备的数据迁移
+    -->
     <!--
     <device-transfer>
         <include .../>
         <exclude .../>
     </device-transfer>
     -->
+
 </data-extraction-rules>

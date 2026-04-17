@@ -1,24 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!-- Copyright (c) 2010-2011, The MiCode Open Source Community (www.micode.net)
+<!--
+    版权声明 (c) 2010-2011, 米代码开源社区 (www.micode.net)
 
-     Licensed under the Apache License, Version 2.0 (the "License");
-     you may not use this file except in compliance with the License.
-     You may obtain a copy of the License at
+    根据 Apache License 2.0 版本（“许可证”）授权；
+    除非遵守许可证，否则您不得使用此文件。
+    您可以在以下网址获取许可证副本：
 
-          http://www.apache.org/licenses/LICENSE-2.0
+         http://www.apache.org/licenses/LICENSE-2.0
 
-     Unless required by applicable law or agreed to in writing, software
-     distributed under the License is distributed on an "AS IS" BASIS,
-     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-     See the License for the specific language governing permissions and
-     limitations under the License.
+    除非适用法律要求或书面同意，根据许可证分发的软件
+    是按“原样”基础分发的，不附带任何明示或暗示的担保或条件。
+    请参阅许可证以了解特定语言下的权限和限制。
+-->
+
+<!--
+    dimens.xml - 尺寸资源文件
+
+    作用：集中定义应用中使用的文字尺寸（字体大小）
+
+    设计目的：
+    1. 统一管理字体大小，保证应用内字体风格一致
+    2. 方便根据不同屏幕密度或用户偏好调整字体
+    3. 支持无障碍功能（如系统大字体模式）
+
+    单位说明：
+    sp (Scale-independent Pixels) - 缩放无关像素
+    与 dp 类似，但还会根据用户的字体大小偏好进行缩放
+    推荐用于文字尺寸，以保证无障碍体验
 -->
 
 <resources>
+
+    <!--
+        超大字体 - 33sp
+        使用场景：
+        - 便签编辑界面的标题或重点内容
+        - 某些特殊强调的文本
+        - 对应 NoteEditActivity 中的大字号模式
+    -->
     <dimen name="text_font_size_super">33sp</dimen>
+
+    <!--
+        大字体 - 26sp
+        使用场景：
+        - 便签列表中的标题
+        - 对话框标题
+        - 设置界面的分类标题
+    -->
     <dimen name="text_font_size_large">26sp</dimen>
+
+    <!--
+        中字体 - 20sp
+        使用场景：
+        - 便签列表中的预览内容
+        - 普通对话内容
+        - 菜单项文字
+    -->
     <dimen name="text_font_size_medium">20sp</dimen>
+
+    <!--
+        正常字体 - 17sp（系统默认推荐大小）
+        使用场景：
+        - 便签正文内容
+        - 常规界面文字
+        - 列表项主要内容
+        - Android 系统默认的正文字体大小
+    -->
     <dimen name="text_font_size_normal">17sp</dimen>
+
+    <!--
+        小字体 - 14sp
+        使用场景：
+        - 辅助说明文字
+        - 时间戳显示
+        - 提示信息
+        - 次要信息文本
+    -->
     <dimen name="text_font_size_small">14sp</dimen>
+
 </resources>

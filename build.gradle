@@ -1,4 +1,7 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
+// 顶级构建文件，你可以在这里添加所有子项目/模块通用的配置选项
 plugins {
+    // 引用版本目录（Version Catalog）中定义的 Android 应用插件
+    // libs.plugins.android.application 对应 gradle/libs.versions.toml 里的配置
+    // apply false 表示：不在根项目应用此插件，只在子模块（如 app 模块）中应用
     alias(libs.plugins.android.application) apply false
 }

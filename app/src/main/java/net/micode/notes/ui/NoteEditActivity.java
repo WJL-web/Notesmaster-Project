@@ -56,8 +56,6 @@ import android.widget.Toast;
 import android.widget.Button;
 import android.graphics.Color;
 
-import android.widget.ImageButton;
-
 import net.micode.notes.R;
 import net.micode.notes.data.Notes;
 import net.micode.notes.data.Notes.TextNote;
@@ -89,14 +87,8 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     private LinearLayout mSearchPanel;
     private EditText mSearchInsideEditText;
 
-    private TextView mSearchStatusText; // 用来显示 0/0 的那个文本框
-
     private List<Integer> mSearchPositions = new ArrayList<>(); // 存储所有匹配结果的开始坐标
     private int mCurrentSearchIndex = -1; // 当前正在查看第几个结果
-
-    // 加粗功能相关变量
-    private ImageButton mBoldButton;
-    private boolean mIsBoldMode = false;
 
     private class HeadViewHolder {
         public TextView tvModified;
@@ -403,19 +395,6 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         mNoteEditorPanel = findViewById(R.id.sv_note_edit);
         mNoteBgColorSelector = findViewById(R.id.note_bg_color_selector);
 
-
-        // --- 加粗功能 ---
-        mBoldButton = (ImageButton) findViewById(R.id.btn_bold);
-        if (mBoldButton != null) {
-            mBoldButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    toggleBold();
-                }
-            });
-        }
-
-
         // --- 1. 字数统计逻辑 ---
         mWordCountText = (TextView) findViewById(R.id.tv_word_count);
         if (mNoteEditor != null && mWordCountText != null) {
@@ -455,12 +434,6 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         Button btnDoSearch = (Button) findViewById(R.id.btn_do_search);
         Button btnClearSearch = (Button) findViewById(R.id.btn_clear_search);
 
-        // --- 修改：初始化搜索状态文本框 (0/0) ---
-        mSearchStatusText = (TextView) findViewById(R.id.tv_search_status);
-        if (mSearchStatusText != null) {
-            mSearchStatusText.setText("0/0");
-        }
-
         // --- 新增：上一个/下一个 按钮初始化 ---
         Button btnPrev = (Button) findViewById(R.id.btn_prev);
         Button btnNext = (Button) findViewById(R.id.btn_next);
@@ -482,13 +455,10 @@ public class NoteEditActivity extends Activity implements OnClickListener,
                     if (mSearchInsideEditText != null) {
                         mSearchInsideEditText.setText("");
                     }
-                    // 清除时重置索引表和文字显示
+                    // 清除时重置索引表
                     if (mSearchPositions != null)
                         mSearchPositions.clear();
                     mCurrentSearchIndex = -1;
-                    if (mSearchStatusText != null) {
-                        mSearchStatusText.setText("0/0");
-                    }
                 }
             });
         }
@@ -499,6 +469,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
                 @Override
                 public void onClick(View v) {
                     if (mSearchPositions != null && !mSearchPositions.isEmpty()) {
+                        // 索引减 1，如果小于 0 则跳到最后一个
                         mCurrentSearchIndex--;
                         if (mCurrentSearchIndex < 0) {
                             mCurrentSearchIndex = mSearchPositions.size() - 1;
@@ -515,6 +486,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
                 @Override
                 public void onClick(View v) {
                     if (mSearchPositions != null && !mSearchPositions.isEmpty()) {
+                        // 索引加 1，取余实现循环
                         mCurrentSearchIndex = (mCurrentSearchIndex + 1) % mSearchPositions.size();
                         scrollToPresentResult();
                     }
@@ -600,6 +572,8 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         }
     }
 
+
+    @SuppressWarnings("GestureBackNavigation")
     @Override
     public void onBackPressed() {
         if (clearSettingState()) {
@@ -933,7 +907,6 @@ public class NoteEditActivity extends Activity implements OnClickListener,
         }
     }
 
-
     private boolean getWorkingText() {
         boolean hasChecked = false;
         if (mWorkingNote.getCheckListMode() == TextNote.MODE_CHECK_LIST) {
@@ -1052,7 +1025,8 @@ public class NoteEditActivity extends Activity implements OnClickListener,
             mSearchPositions.add(start);
 
             // 默认背景全部染成黄色
-            editable.setSpan(new BackgroundColorSpan(Color.YELLOW), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            editable.setSpan(new BackgroundColorSpan(Color.YELLOW),
+                    start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
             start = end;
         }
@@ -1062,17 +1036,6 @@ public class NoteEditActivity extends Activity implements OnClickListener,
             mCurrentSearchIndex = 0;
             scrollToPresentResult(); // 执行跳转定位
         }
-
-        // 在 performHighlight 的最后
-        if (!mSearchPositions.isEmpty()) {
-            mCurrentSearchIndex = 0;
-            scrollToPresentResult();
-        } else {
-            // 如果没搜到，显式设置为 0/0
-            if (mSearchStatusText != null)
-                mSearchStatusText.setText("0/0");
-        }
-
     }
 
     // 清除所有背景标签
@@ -1089,126 +1052,26 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     }
 
     private void scrollToPresentResult() {
-        if (mSearchPositions.isEmpty() || mCurrentSearchIndex < 0) {
-            if (mSearchStatusText != null)
-                mSearchStatusText.setText("0/0");
+        if (mSearchPositions.isEmpty() || mCurrentSearchIndex < 0)
             return;
-        }
 
-        // --- 原有的染色和滚动逻辑 ---
         Editable editable = mNoteEditor.getText();
         String keyword = mSearchInsideEditText.getText().toString();
         int start = mSearchPositions.get(mCurrentSearchIndex);
         int end = start + keyword.length();
 
-        editable.setSpan(new BackgroundColorSpan(Color.rgb(255, 165, 0)), start, end,
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        // 1. 先清除掉旧的“当前选中”的高亮（如果有的话）
+        // 为了不误删其他黄色的高亮，我们这里只针对当前选中的位置重新染色覆盖
+        editable.setSpan(new BackgroundColorSpan(Color.rgb(255, 165, 0)), // 橙色表示当前选中
+                start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
+        // 2. 自动滚动光标到这个位置（像 Word 搜索后自动跳转）
         mNoteEditor.setSelection(start);
         mNoteEditor.requestFocus();
 
-        // --- 新增：更新 1/5 这种进度文字 ---
-        if (mSearchStatusText != null) {
-            // mCurrentSearchIndex 是从 0 开始的，所以显示要 +1
-            String status = (mCurrentSearchIndex + 1) + "/" + mSearchPositions.size();
-            mSearchStatusText.setText(status);
-        }
-    }
-
-    /**
-     * 切换加粗状态
-     */
-    private void toggleBold() {
-        int start = mNoteEditor.getSelectionStart();
-        int end = mNoteEditor.getSelectionEnd();
-
-        if (start != end) {
-            // 有选中文本，对选中文本应用加粗
-            applyBoldToSelection(start, end);
-        } else {
-            // 没有选中文本，切换加粗模式（后续输入自动加粗）
-            toggleBoldMode();
-        }
-    }
-
-    /**
-     * 对选中的文本区域应用加粗或取消加粗
-     */
-    private void applyBoldToSelection(int start, int end) {
-        android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder(mNoteEditor.getText());
-
-        // 检查选中区域是否已经加粗
-        android.text.style.StyleSpan[] spans = sb.getSpans(start, end, android.text.style.StyleSpan.class);
-        boolean hasBold = false;
-        for (android.text.style.StyleSpan span : spans) {
-            if (span.getStyle() == android.graphics.Typeface.BOLD) {
-                hasBold = true;
-                break;
-            }
-        }
-
-        if (hasBold) {
-            // 移除加粗
-            for (android.text.style.StyleSpan span : spans) {
-                if (span.getStyle() == android.graphics.Typeface.BOLD) {
-                    sb.removeSpan(span);
-                }
-            }
-        } else {
-            // 添加加粗
-            sb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD),
-                    start, end, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-
-        mNoteEditor.setText(sb);
-        mNoteEditor.setSelection(end);
-    }
-
-    /**
-     * 切换加粗模式（用于没有选中文本时，后续输入自动加粗）
-     */
-    /**
-     * 切换加粗模式（用于没有选中文本时，后续输入自动加粗）
-     */
-    private void toggleBoldMode() {
-        mIsBoldMode = !mIsBoldMode;
-
-        // 通知 NoteEditText 当前的加粗模式
-        // 注意：mNoteEditor 是当前的编辑框
-        if (mNoteEditor instanceof NoteEditText) {
-            ((NoteEditText) mNoteEditor).setBoldMode(mIsBoldMode);
-        }
-
-        updateBoldButtonState();
-
-        String tip = mIsBoldMode ? "已开启加粗模式" : "已关闭加粗模式";
-        Toast.makeText(this, tip, Toast.LENGTH_SHORT).show();
-    }
-    /**
-     * 更新加粗按钮的显示状态
-     */
-    private void updateBoldButtonState() {
-        if (mBoldButton != null) {
-            if (mIsBoldMode) {
-                mBoldButton.setAlpha(1.0f);
-                mBoldButton.setColorFilter(Color.BLUE);
-            } else {
-                mBoldButton.setAlpha(0.5f);
-                mBoldButton.setColorFilter(null);
-            }
-        }
-    }
-
-    /**
-     * 输入新文字时应用加粗（需要在 NoteEditText 中调用）
-     * 这个方法供 NoteEditText 调用
-     */
-    public boolean isBoldMode() {
-        return mIsBoldMode;
+        // 3. 提示当前是第几个结果（可选，如果你有 TextView 显示进度的建议加上）
+        // Toast.makeText(this, "第 " + (mCurrentSearchIndex + 1) + " 个 / 共 " +
+        // mSearchPositions.size() + " 个", Toast.LENGTH_SHORT).show();
     }
 
 }
-
-
-
-

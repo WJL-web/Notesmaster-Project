@@ -1,102 +1,136 @@
 /*
- * 版权声明 (c) 2010-2011, 米代码开源社区 (www.micode.net)
+ * Copyright (c) 2010-2011, The MiCode Open Source Community (www.micode.net)
  *
- * 根据 Apache License 2.0 版本（“许可证”）授权；
- * 除非遵守许可证，否则您不得使用此文件。
- * 您可以在以下网址获取许可证副本：
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
- * 除非适用法律要求或书面同意，根据许可证分发的软件
- * 是按“原样”基础分发的，不附带任何明示或暗示的担保或条件。
- * 请参阅许可证以了解特定语言下的权限和限制。
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/*
+ * 文件名: ActionFailureException.java
+ * 功能: 自定义运行时异常类，用于表示在GTask同步操作中发生的操作失败异常
+ * 作者: MiCode开源社区
+ * 创建时间: 2010-2011年间
+ * 修改记录: 无
+ *
+ * 版权声明:
+ * 本文件遵循Apache License 2.0开源协议
+ * 详细许可证信息请参考: http://www.apache.org/licenses/LICENSE-2.0
  */
 
-/**
- * 包名：net.micode.notes.gtask.exception
- * 该包包含Google Tasks同步功能相关的自定义异常类
- */
+// 包声明: 定义当前类所在的包路径
+// 包结构说明:
+//   net.micode.notes       - 项目基础包
+//   gtask                  - Google任务同步相关模块
+//   exception              - 异常处理包，存放自定义异常类
 package net.micode.notes.gtask.exception;
 
 /**
- * ActionFailureException 类 - 操作失败异常
+ * 类名: ActionFailureException
+ * 描述: 自定义运行时异常(RuntimeException)的子类，专门用于表示GTask同步操作失败
  *
- * 作用：表示在Google Tasks同步过程中，某个操作执行失败时抛出的运行时异常
+ * 主要用途:
+ * 1. 在Google Task同步过程中，当某个操作(如网络请求、数据处理、同步等)失败时抛出
+ * 2. 封装操作失败的详细信息，便于上层调用者捕获和处理
+ * 3. 支持异常链(exception chaining)，可以追溯根本原因
  *
- * 继承关系：
- * - 继承自 RuntimeException（运行时异常）
- * - 属于非受检异常（Unchecked Exception），不需要在方法签名中显式声明throws
+ * 异常类型: RuntimeException(运行时异常)
+ * 选择原因: 不需要在方法签名中显式声明，适用于那些程序无法提前预知的错误
+ *          如: 网络中断、服务器异常、数据格式错误等
  *
- * 使用场景：
- * 1. JSON数据构建失败时（如创建/更新任务的JSON生成错误）
- * 2. 数据库操作失败时（如插入便签后无法获取生成的ID）
- * 3. 网络请求失败或响应解析错误时
- * 4. 任何导致同步操作无法继续的异常情况
+ * 设计模式: 自定义异常模式
+ * 继承关系: ActionFailureException → RuntimeException → Exception → Throwable
  *
- * 为什么选择继承 RuntimeException：
- * - 同步过程中的错误通常是不可恢复的，不需要强制调用方处理
- * - 简化代码，避免到处写 try-catch
- * - 在合适的地方统一捕获并处理
+ * 注意事项:
+ * 1. 这是一个非受检异常(unchecked exception)，不需要try-catch强制处理
+ * 2. 但建议在适当的逻辑层捕获并处理此异常
+ * 3. 通常用于GTask同步模块内部，上层UI层应捕获并给用户友好提示
  */
 public class ActionFailureException extends RuntimeException {
 
     /**
-     * 序列化版本UID
-     *
-     * 作用：用于对象的序列化和反序列化
-     * 当异常对象需要在进程间传递（如通过Binder）或保存到文件时使用
-     *
-     * 说明：
-     * - private static final 修饰，属于类常量
-     * - 显式声明可以保证不同版本的JVM序列化兼容性
-     * - 如果不声明，JVM会自动生成一个，但可能因编译器实现不同而导致兼容性问题
+     * serialVersionUID: 序列化版本UID
+     * 作用: 用于对象的序列化和反序列化版本控制
+     * 值说明: 4425249765923293627L
+     *         - 这是一个随机生成的64位长整型数值
+     *         - 当类的结构发生变化时，修改此值可以防止不兼容的序列化
+     * 注意事项: 如果修改了类的结构(如增删字段)，应考虑更新此值
      */
     private static final long serialVersionUID = 4425249765923293627L;
 
     /**
-     * 无参构造函数
+     * 方法名: ActionFailureException (默认构造方法)
+     * 功能: 创建一个没有详细错误信息的ActionFailureException实例
+     * 使用场景: 当只需要知道操作失败，不需要额外错误信息时
      *
-     * 创建一个没有详细消息和原因的异常实例
-     *
-     * 使用场景：仅需要知道发生了操作失败，不需要额外信息时
+     * 示例:
+     *   throw new ActionFailureException();
+     *   抛出异常后，异常信息为null，调用getMessage()返回null
      */
     public ActionFailureException() {
-        super();  // 调用父类RuntimeException的无参构造函数
+        super();  // 调用父类RuntimeException的无参构造方法
     }
 
     /**
-     * 带消息参数的构造函数
+     * 方法名: ActionFailureException (带消息参数的构造方法)
+     * 功能: 创建一个包含详细错误信息的ActionFailureException实例
      *
-     * 创建一个带有详细消息的异常实例
+     * @param paramString 错误描述信息
+     *                    类型: String
+     *                    描述: 人类可读的错误描述，说明操作失败的原因
+     *                    取值范围: 任意非空字符串，建议使用具体、清晰的描述
+     *                    示例: "网络连接失败，无法同步数据到Google Task"
      *
-     * @param paramString 异常详细信息，用于描述失败的具体原因
+     * 异常链: 不包含原始异常(Throwable)
+     * 使用场景: 当操作失败有明确原因，但不需要记录底层异常时
      *
-     * 使用示例：
-     * throw new ActionFailureException("fail to generate task-create jsonobject");
-     * throw new ActionFailureException("create note failed");
+     * 示例:
+     *   throw new ActionFailureException("同步任务时发生网络超时");
+     *   抛出异常后，异常信息为"同步任务时发生网络超时"
      */
     public ActionFailureException(String paramString) {
-        super(paramString);  // 调用父类RuntimeException的单参构造函数
+        super(paramString);  // 调用父类RuntimeException的带消息构造方法
     }
 
     /**
-     * 带消息和原因的构造函数
+     * 方法名: ActionFailureException (带消息和原因的构造方法)
+     * 功能: 创建一个包含错误信息和根本原因的ActionFailureException实例
      *
-     * 创建一个带有详细消息和原始原因的异常实例
+     * @param paramString 错误描述信息
+     *                    类型: String
+     *                    描述: 人类可读的错误描述，说明操作失败的原因
+     *                    取值范围: 任意非空字符串
      *
-     * @param paramString 异常详细信息
-     * @param paramThrowable 原始异常（导致当前异常的根本原因）
+     * @param paramThrowable 导致此异常的原始异常/原因
+     *                       类型: Throwable
+     *                       描述: 引发当前异常的根本原因(底层异常)
+     *                       取值范围: 任何Throwable实例或其子类
+     *                       常见值: IOException, JSONException, NetworkException等
      *
-     * 使用场景：包装捕获到的其他异常，保留原始的异常堆栈信息
+     * 异常链: 包含原始异常，可以通过getCause()方法获取
+     * 使用场景: 当操作失败是由其他异常引起，需要保留完整的异常堆栈信息时
      *
-     * 使用示例：
-     * try {
-     *     // 某些操作
-     * } catch (JSONException e) {
-     *     throw new ActionFailureException("JSON parse failed", e);
-     * }
+     * 示例:
+     *   try {
+     *       // 执行网络请求
+     *   } catch (IOException e) {
+     *       throw new ActionFailureException("网络请求失败", e);
+     *   }
+     *
+     *   这样可以在日志中看到完整的异常链，便于问题排查
      */
     public ActionFailureException(String paramString, Throwable paramThrowable) {
-        super(paramString, paramThrowable);  // 调用父类RuntimeException的双参构造函数
+        super(paramString, paramThrowable);  // 调用父类RuntimeException的带消息和原因的构造方法
     }
+
+    // 注意: 此类没有覆盖父类的其他方法，如getMessage(), getCause(), printStackTrace()等
+    // 这些方法会继承自RuntimeException和Throwable类
+    // 如果有特殊需求，可以重写这些方法，但通常不需要
 }

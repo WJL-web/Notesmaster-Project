@@ -23,43 +23,39 @@ import net.micode.notes.R;
 import net.micode.notes.data.Notes;
 import net.micode.notes.tool.ResourceParser;
 
-/**
- * 小米便签 4×4 大小桌面小部件
- * 继承自 NoteWidgetProvider（所有小部件的通用父类）
- * 作用：
- * 1. 指定 4x 小部件的布局文件
- * 2. 指定 4x 小部件对应的背景图片
- * 3. 指定小部件类型为 TYPE_WIDGET_4X
- */
+// NoteWidgetProvider_4x - Widget provider for 4x size widget
+/* 4x4尺寸桌面小部件提供者 - 继承自NoteWidgetProvider，实现4x4尺寸的小部件 */
 public class NoteWidgetProvider_4x extends NoteWidgetProvider {
-
-    /**
-     * 系统调用：小部件需要更新时
-     * 直接调用父类的更新逻辑，所有小部件刷新逻辑统一实现
-     */
+    
+    // Called when widget is updated
+    /* 当小部件更新时调用 */
+    /* @param context 上下文对象 */
+    /* @param appWidgetManager 小部件管理器 */
+    /* @param appWidgetIds 需要更新的小部件ID数组 */
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         super.update(context, appWidgetManager, appWidgetIds);
     }
 
-    /**
-     * 返回 4x 小部件对应的布局文件：widget_4x.xml
-     */
+    // Get the layout resource id for 4x widget
+    /* 获取4x尺寸小部件的布局资源ID */
+    /* @return 布局资源ID */
     protected int getLayoutId() {
         return R.layout.widget_4x;
     }
 
-    /**
-     * 根据背景ID，返回 4x 小部件对应的背景图片资源
-     */
+    // Get background resource by color id for 4x widget
+    /* 根据颜色ID获取4x小部件的背景图片资源 */
+    /* @param bgId 背景颜色ID */
+    /* @return 背景图片资源ID */
     @Override
     protected int getBgResourceId(int bgId) {
         return ResourceParser.WidgetBgResources.getWidget4xBgResource(bgId);
     }
 
-    /**
-     * 返回当前小部件类型：4x 小部件
-     */
+    // Get widget type constant
+    /* 获取小部件类型常量 */
+    /* @return 小部件类型（4x尺寸） */
     @Override
     protected int getWidgetType() {
         return Notes.TYPE_WIDGET_4X;

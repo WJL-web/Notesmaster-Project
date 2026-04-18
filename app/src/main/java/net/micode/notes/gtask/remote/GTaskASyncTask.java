@@ -13,9 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * 文件名: GTaskASyncTask.java
+ * 功能: 小米便签应用中处理Google Task(GTask)同步的异步任务类
+ * 作者: The MiCode Open Source Community
+ * 创建时间: 2010-2011
+ * 修改记录: 包含Android 13通知权限适配和PendingIntent flags修复
+ *
+ * 版权声明:
+ * 遵循Apache License, Version 2.0开源协议
+ * 许可证详情: http://www.apache.org/licenses/LICENSE-2.0
+ * 核心要点:
+ * 1. 允许自由使用、修改、分发，但需保留原始版权声明
+ * 2. 不提供任何明示或暗示的担保
+ * 3. 不对使用本软件产生的损害承担责任
+ */
 
 package net.micode.notes.gtask.remote;
 
+// Android系统相关导入
 import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -26,235 +42,252 @@ import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
-
 import androidx.core.app.ActivityCompat;
 
+// 项目资源导入
 import net.micode.notes.R;
 import net.micode.notes.ui.NotesListActivity;
 import net.micode.notes.ui.NotesPreferenceActivity;
 
 /**
- * Google Tasks 异步同步任务类
+ * 类名: GTaskASyncTask
+ * 描述: 继承自AsyncTask的异步任务类，专门处理与Google Task的网络数据同步
  *
- * 继承自 AsyncTask，在后台线程中执行与 Google Tasks 服务的同步操作。
- * 该类负责管理同步过程中的 UI 反馈（通知栏进度显示）和最终结果通知。
+ * AsyncTask泛型参数说明:
+ * 1. Void: 执行任务时不需要传入参数
+ * 2. String: 进度更新时传递的消息类型(如"正在登录...")
+ * 3. Integer: 后台任务执行完成后返回的结果码(如成功、网络错误等)
  *
- * 主要功能：
- * - 后台执行同步操作（doInBackground）
- * - 实时更新通知栏进度（onProgressUpdate）
- * - 同步完成后显示结果通知（onPostExecute）
- * - 支持取消正在进行的同步任务
+ * 主要职责:
+ * 1. 在后台线程执行GTask同步操作
+ * 2. 通过通知栏向用户展示同步进度和结果
+ * 3. 处理Android 13及以上版本的通知权限适配
+ * 4. 提供同步取消机制
+ * 5. 同步完成后回调通知
  *
- * 泛型参数说明：
- * - Void: 不需要传入参数
- * - String: 进度更新时传递的消息字符串
- * - Integer: 返回同步结果状态码
+ * 工作流程:
+ * 1. 创建实例时传入上下文和完成监听器
+ * 2. 调用execute()启动异步任务
+ * 3. doInBackground()在后台执行实际的同步逻辑
+ * 4. 通过publishProgress()更新进度，触发onProgressUpdate()显示通知
+ * 5. 同步完成后，onPostExecute()根据结果码显示最终通知
+ * 6. 调用完成监听器的onComplete()方法
  *
- * @author MiCode Open Source Community
- * @see GTaskManager 实际的同步逻辑管理器
- * @see AsyncTask Android 异步任务基类
+ * 设计模式: 异步任务模式 + 观察者模式(通过回调监听)
+ * 线程安全: AsyncTask内部已处理线程安全问题
  */
 public class GTaskASyncTask extends AsyncTask<Void, String, Integer> {
-
-    /** 同步通知的唯一标识 ID，用于更新/取消特定通知 */
+    /** 通知ID常量: 用于标识GTask同步通知，避免与其他通知冲突 */
     private static int GTASK_SYNC_NOTIFICATION_ID = 5234235;
 
     /**
-     * 同步完成监听器接口
-     * 当同步任务完成（无论成功或失败）时回调
+     * 接口: OnCompleteListener
+     * 功能: 同步完成回调接口，使用观察者模式实现任务完成通知
+     * 设计意图: 解耦同步任务和调用者，允许异步回调
      */
     public interface OnCompleteListener {
         /**
-         * 同步完成时的回调方法
-         * 在异步任务结束后被调用，运行在独立线程中
+         * 当GTask同步任务完成时被调用
+         * 注意: 此方法在新线程中执行，避免阻塞主线程
          */
         void onComplete();
     }
 
-    /** 应用上下文，用于访问系统服务和资源 */
+    /** 上下文对象: 提供应用环境信息，用于访问资源、启动Activity等 */
     private Context mContext;
 
-    /** 通知管理器，用于发送状态栏通知 */
+    /** 通知管理器: 用于创建、更新、取消系统通知 */
     private NotificationManager mNotifiManager;
 
-    /** Google Tasks 管理器单例，执行实际的同步逻辑 */
+    /** GTask管理器: 实际执行同步操作的业务逻辑类(单例模式) */
     private GTaskManager mTaskManager;
 
-    /** 同步完成监听器 */
+    /** 完成监听器: 同步完成时的回调接口实现 */
     private OnCompleteListener mOnCompleteListener;
 
     /**
-     * 构造方法
+     * 构造方法: 初始化GTask异步任务
      *
-     * @param context  应用上下文
-     * @param listener 同步完成监听器（可为 null）
+     * @param context 上下文，通常是Service或Activity
+     *                注意: 如果传入Activity，需注意生命周期管理，避免内存泄漏
+     *
+     * @param listener 同步完成监听器，用于任务完成时回调
+     *                 可以为null，表示不监听完成事件
      */
     public GTaskASyncTask(Context context, OnCompleteListener listener) {
         mContext = context;
         mOnCompleteListener = listener;
+        // 获取系统通知管理器服务
         mNotifiManager = (NotificationManager) mContext
                 .getSystemService(Context.NOTIFICATION_SERVICE);
-        mTaskManager = GTaskManager.getInstance();  // 获取单例实例
+        // 获取GTask管理器单例实例
+        mTaskManager = GTaskManager.getInstance();
     }
 
     /**
-     * 取消正在进行的同步任务
-     *
-     * 委托给 GTaskManager 的 cancelSync 方法，
-     * 会尝试中断当前正在执行的同步操作。
+     * 方法名: cancelSync
+     * 功能: 取消正在进行的同步操作
+     * 机制: 调用GTaskManager的cancelSync()方法设置取消标志
+     * 注意: 这是异步取消，实际停止需要GTaskManager内部配合检查取消标志
      */
     public void cancelSync() {
         mTaskManager.cancelSync();
     }
 
     /**
-     * 发布进度更新（供外部调用）
+     * 方法名: publishProgess
+     * 功能: 发布同步进度(工具方法，包装publishProgress)
+     * 作用: 简化进度发布调用，统一错误处理
      *
-     * 此方法可以在同步过程中被调用，用于更新 UI 反馈。
-     * 实际会触发 onProgressUpdate 方法在 UI 线程中执行。
-     *
-     * @param message 进度消息文本
+     * @param message 进度消息，显示在通知栏
+     *                示例: "正在登录Google账户..."
      */
     public void publishProgess(String message) {
         publishProgress(new String[] { message });
     }
 
     /**
-     * 显示通知栏消息
+     * 方法名: showNotification
+     * 功能: 显示同步状态通知
+     * 特性:
+     * 1. 根据同步结果(tickerId)决定点击通知后的跳转目标
+     * 2. 处理Android 12+的PendingIntent flags
+     * 3. 适配Android 13+的通知权限
+     * 4. 使用Notification.Builder构建通知(兼容新旧版本)
      *
-     * 根据同步状态（进行中/成功/失败/取消）显示不同的通知样式。
-     * 点击通知会跳转到相应的 Activity：
-     * - 同步失败：跳转到设置页（引导用户检查账号）
-     * - 同步成功：跳转到便签列表页
+     * @param tickerId 状态标识资源ID，决定通知图标和点击行为
+     *                 R.string.ticker_success: 同步成功
+     *                 R.string.ticker_syncing: 同步中
+     *                 R.string.ticker_fail: 同步失败
+     *                 R.string.ticker_cancel: 同步取消
      *
-     * 兼容性处理：
-     * - Android 6.0+：设置 PendingIntent.FLAG_IMMUTABLE 标志
-     * - Android 13+：检查 POST_NOTIFICATIONS 权限
-     *
-     * @param tickerId 通知栏滚动文本的资源 ID（如 R.string.ticker_syncing）
-     * @param content  通知内容文本
+     * @param content 通知内容文本，显示具体的状态信息
      */
     private void showNotification(int tickerId, String content) {
-        // 创建基础通知（带滚动文本和图标）
-        Notification notification = new Notification(R.drawable.notification,
-                mContext.getString(tickerId), System.currentTimeMillis());
-        notification.defaults = Notification.DEFAULT_LIGHTS;  // 启用默认指示灯闪烁
-        notification.flags = Notification.FLAG_AUTO_CANCEL;    // 点击后自动消失
-        PendingIntent pendingIntent;
+        // 创建基础Notification对象(已过时，用于设置默认值)
+        Notification notification = new Notification(R.drawable.notification, mContext
+                .getString(tickerId), System.currentTimeMillis());
+        notification.defaults = Notification.DEFAULT_LIGHTS; // 默认LED灯提示
+        notification.flags = Notification.FLAG_AUTO_CANCEL;  // 点击后自动取消
 
-        // 构建 PendingIntent 的 flags（确保兼容性）
-        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        PendingIntent pendingIntent;
+        // 1. 定义符合安全规范的PendingIntent flags
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT; // 如果存在则更新
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            flags |= PendingIntent.FLAG_IMMUTABLE;  // Android 6.0+ 要求显式设置不可变性
+            // Android 6.0+ 需要添加FLAG_IMMUTABLE保证安全性
+            flags |= PendingIntent.FLAG_IMMUTABLE;
         }
 
-        // 根据同步状态决定点击跳转的目标页面
+        // 根据同步结果决定点击通知后的跳转目标
         if (tickerId != R.string.ticker_success) {
-            // 同步失败或进行中：跳转到设置页（让用户检查账号配置）
+            // 同步失败/进行中/取消：跳转到设置页(检查账户配置)
             pendingIntent = PendingIntent.getActivity(mContext, 0,
                     new Intent(mContext, NotesPreferenceActivity.class), flags);
         } else {
-            // 同步成功：跳转到便签列表主页
+            // 同步成功：跳转到笔记列表页
             pendingIntent = PendingIntent.getActivity(mContext, 0,
                     new Intent(mContext, NotesListActivity.class), flags);
         }
 
-        // 使用 Notification.Builder 构建完整通知（支持更多特性）
+        // 使用Notification.Builder构建通知(兼容Android 3.0+)
         Notification.Builder builder = new Notification.Builder(mContext)
-                .setContentTitle(mContext.getString(R.string.app_name))  // 标题：应用名称
-                .setContentText(content)                                 // 内容文本
-                .setSmallIcon(R.mipmap.ic_launcher)                      // 小图标（启动图标）
-                .setContentIntent(pendingIntent);                        // 点击意图
+                .setContentTitle(mContext.getString(R.string.app_name)) // 通知标题
+                .setContentText(content) // 通知内容
+                .setSmallIcon(R.mipmap.ic_launcher) // 小图标(使用应用启动图标)
+                .setContentIntent(pendingIntent); // 点击意图
 
-        notification = builder.build();
+        notification = builder.build(); // 构建Notification对象
 
-        // Android 13 (API 33) 及以上需要运行时权限检查
+        // Android 13(API 33)及以上版本的通知权限检查
         if (Build.VERSION.SDK_INT >= 33) {
-            if (ActivityCompat.checkSelfPermission(this.mContext, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                // 没有通知权限时记录日志并跳过发送（避免崩溃）
+            // 检查是否已获得通知权限
+            if (ActivityCompat.checkSelfPermission(this.mContext,
+                    Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                // 没有权限时的处理：记录日志，避免崩溃
                 Log.w("GTaskSync", "Missing POST_NOTIFICATIONS permission");
-                // 注意：实际生产环境中应引导用户开启权限，此处仅做防护
+                // 注意: 这里可以引导用户开启权限，但当前只是记录日志
+                // return; // 如果需要，可以在此处返回，不发送通知
             }
         }
 
-        // 发送通知
+        // 显示通知(使用唯一ID，多次调用会更新同一通知)
         mNotifiManager.notify(GTASK_SYNC_NOTIFICATION_ID, notification);
     }
 
     /**
-     * 后台执行同步任务（运行在非 UI 线程）
+     * 方法名: doInBackground
+     * 功能: 后台执行同步操作的核心方法(AsyncTask要求)
+     * 执行环境: 在工作线程(非UI线程)中自动调用
+     * 调用时机: execute()方法被调用后，由AsyncTask框架自动调度执行
      *
-     * 首先发布登录进度消息，然后委托给 GTaskManager 执行实际的同步操作。
-     *
-     * @param unused 无用的参数（AsyncTask 要求）
-     * @return 同步结果状态码（如 STATE_SUCCESS、STATE_NETWORK_ERROR 等）
+     * @param unused 可变参数，此处不使用
+     * @return 同步结果码(Integer)，对应GTaskManager中定义的常量
+     *         例如: STATE_SUCCESS, STATE_NETWORK_ERROR等
      */
     @Override
     protected Integer doInBackground(Void... unused) {
-        // 发布登录进度（显示正在登录的账号名）
+        // 发布登录进度消息
         publishProgess(mContext.getString(R.string.sync_progress_login,
                 NotesPreferenceActivity.getSyncAccountName(mContext)));
-        // 执行同步并返回结果
+
+        // 调用GTaskManager执行实际同步，返回结果码
         return mTaskManager.sync(mContext, this);
     }
 
     /**
-     * 进度更新回调（运行在 UI 线程）
+     * 方法名: onProgressUpdate
+     * 功能: 更新同步进度(在主线程中执行)
+     * 调用时机: 在doInBackground中调用publishProgress()后自动触发
+     * 用途: 显示进度通知，并可向GTaskSyncService发送广播
      *
-     * 当 publishProgress 被调用时触发，用于更新通知栏的同步进度信息。
-     * 如果 mContext 是 GTaskSyncService 实例，还会通过广播发送进度消息。
-     *
-     * @param progress 进度消息数组（通常只使用第一个元素）
+     * @param progress 进度消息数组，通常只包含一个字符串
      */
     @Override
     protected void onProgressUpdate(String... progress) {
-        // 显示同步进行中的通知
+        // 显示同步中的通知
         showNotification(R.string.ticker_syncing, progress[0]);
 
-        // 如果当前 Context 是同步服务，则通过广播向外发送进度信息
+        // 如果上下文是GTaskSyncService，发送进度广播
         if (mContext instanceof GTaskSyncService) {
             ((GTaskSyncService) mContext).sendBroadcast(progress[0]);
         }
     }
 
     /**
-     * 同步完成后的回调（运行在 UI 线程）
+     * 方法名: onPostExecute
+     * 功能: 同步完成后处理结果(在主线程中执行)
+     * 调用时机: doInBackground执行完成后自动调用
+     * 职责:
+     * 1. 根据结果码显示对应的成功/失败通知
+     * 2. 记录最后一次同步时间(仅成功时)
+     * 3. 调用完成监听器的回调方法(在新线程中)
      *
-     * 根据同步结果状态码显示相应的通知（成功/失败/取消）。
-     * 同步成功时还会记录最后一次同步时间。
-     * 最后调用 OnCompleteListener 回调（在独立线程中执行）。
-     *
-     * @param result 同步结果状态码，可能的值：
-     *               - GTaskManager.STATE_SUCCESS
-     *               - GTaskManager.STATE_NETWORK_ERROR
-     *               - GTaskManager.STATE_INTERNAL_ERROR
-     *               - GTaskManager.STATE_SYNC_CANCELLED
+     * @param result 同步结果码，来自doInBackground的返回值
      */
     @Override
     protected void onPostExecute(Integer result) {
-        // 根据结果状态显示对应通知
+        // 根据不同的结果码显示不同的通知
         if (result == GTaskManager.STATE_SUCCESS) {
-            // 同步成功：显示成功通知，并记录最后同步时间
-            showNotification(R.string.ticker_success,
-                    mContext.getString(R.string.success_sync_account,
-                            mTaskManager.getSyncAccount()));
+            // 同步成功：显示成功通知，记录同步时间
+            showNotification(R.string.ticker_success, mContext.getString(
+                    R.string.success_sync_account, mTaskManager.getSyncAccount()));
             NotesPreferenceActivity.setLastSyncTime(mContext, System.currentTimeMillis());
+
         } else if (result == GTaskManager.STATE_NETWORK_ERROR) {
             // 网络错误
-            showNotification(R.string.ticker_fail,
-                    mContext.getString(R.string.error_sync_network));
+            showNotification(R.string.ticker_fail, mContext.getString(R.string.error_sync_network));
+
         } else if (result == GTaskManager.STATE_INTERNAL_ERROR) {
-            // 内部错误（如 JSON 解析失败、数据库错误等）
-            showNotification(R.string.ticker_fail,
-                    mContext.getString(R.string.error_sync_internal));
+            // 内部错误(如数据解析、逻辑错误)
+            showNotification(R.string.ticker_fail, mContext.getString(R.string.error_sync_internal));
+
         } else if (result == GTaskManager.STATE_SYNC_CANCELLED) {
-            // 用户主动取消同步
-            showNotification(R.string.ticker_cancel,
-                    mContext.getString(R.string.error_sync_cancelled));
+            // 同步被用户取消
+            showNotification(R.string.ticker_cancel, mContext
+                    .getString(R.string.error_sync_cancelled));
         }
 
-        // 触发完成监听器（在新线程中执行，避免阻塞 UI 线程）
+        // 调用完成监听器(如果有)
         if (mOnCompleteListener != null) {
             new Thread(new Runnable() {
                 public void run() {

@@ -1,25 +1,86 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?><!-- 声明了小米便签应用所需的系统权限、核心组件（如主界面、编辑器、后台服务等）及其与系统交互的规则。 -->
+<!--
+  文件名: AndroidManifest.xml
+  功能: Android应用程序的配置文件，定义了应用的基本信息、权限、组件和系统交互方式
+  作用: 1. 声明应用包名和版本信息
+        2. 声明应用需要的系统权限
+        3. 注册应用的所有组件（Activity、Service、Receiver、Provider）
+        4. 定义应用的系统级特性
+  重要说明: 这是Android应用的入口配置文件，系统通过此文件了解应用的结构
+-->
+
+<!--
+  manifest根元素: Android应用程序清单的根元素
+  xmlns:android: 定义Android命名空间，用于引用Android系统定义的属性和资源
+  package: 应用程序的唯一包名，用于应用标识和资源引用
+  android:versionCode: 内部版本号，用于版本比较，必须是整数
+  android:versionName: 用户可见的版本号，可以是字符串
+-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="net.micode.notes"
     android:versionCode="1"
     android:versionName="0.1">
 
+    <!-- ============================ 权限声明区域 ============================ -->
+    <!--
+      权限声明: 声明应用运行所需的各种系统权限
+      注意: 从Android 6.0(API 23)开始，危险权限需要运行时动态请求
+    -->
+
+    <!-- 写入外部存储权限: 允许应用写入SD卡等外部存储 -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <!-- 安装快捷方式权限: 允许在启动器创建应用快捷方式 -->
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
+
+    <!-- 网络权限: 允许应用访问互联网，用于网络同步功能 -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 读取联系人权限: 允许应用读取设备联系人信息 -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+    <!-- 账户管理相关权限组: 用于与系统账户服务交互，实现账户同步功能 -->
     <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
     <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
+
+    <!-- 开机完成广播权限: 允许应用接收系统启动完成的广播，用于开机后初始化 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!--
+      Android 13(API 33)新增的通知权限: 允许应用发送通知
+      注意: 从Android 13开始，通知权限需要动态请求，不再自动获取
+    -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- ============================ 应用配置区域 ============================ -->
+    <!--
+      application元素: 定义应用的基本属性和所有组件
+      android:icon: 应用图标，显示在启动器和设置中
+      android:label: 应用名称，显示在启动器和设置中
+    -->
     <application
         android:icon="@drawable/icon_app"
         android:label="@string/app_name">
 
+        <!-- ==================== Activity声明 ==================== -->
+        <!--
+          Activity: 用户交互界面的组件
+          注意: 每个Activity必须在此声明，否则无法被系统识别
+        -->
+
+        <!--
+          NotesListActivity: 笔记列表主界面
+          android:name: Activity的类名，".ui.NotesListActivity"表示相对于包名的路径
+          android:configChanges: 指定配置变更时Activity不重启，而是调用onConfigurationChanged
+          android:label: Activity的标题，这里使用应用名称
+          android:launchMode: 启动模式，singleTop表示如果已在栈顶则不创建新实例
+          android:theme: Activity使用的主题样式
+          android:uiOptions: 界面选项，splitActionBarWhenNarrow表示在窄屏时分割操作栏
+          android:windowSoftInputMode: 软键盘显示模式，adjustPan表示Activity会调整布局避免键盘覆盖
+          android:exported: 是否允许其他应用调用，true表示允许
+        -->
         <activity
             android:name=".ui.NotesListActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
@@ -28,83 +89,164 @@
             android:theme="@style/NoteTheme"
             android:uiOptions="splitActionBarWhenNarrow"
             android:windowSoftInputMode="adjustPan"
-            android:exported="true"> <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
+            android:exported="true">
+
+            <!--
+              intent-filter: 意图过滤器，定义Activity能响应的系统动作
+              作用: 声明此Activity可以作为应用的主入口
+            -->
+            <intent-filter>
+                <!-- MAIN动作: 表示这是应用的主入口 -->
+                <action android:name="android.intent.action.MAIN" />
+                <!-- LAUNCHER类别: 表示此Activity应该显示在应用启动器中 -->
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
 
+        <!--
+          NoteEditActivity: 笔记编辑界面
+          功能: 1. 创建和编辑笔记
+                2. 响应外部应用的查看和编辑请求
+                3. 提供搜索功能
+        -->
         <activity
             android:name=".ui.NoteEditActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:launchMode="singleTop"
             android:theme="@style/NoteTheme"
-            android:exported="true"> <intent-filter>
-            <action android:name="android.intent.action.VIEW" />
-            <category android:name="android.intent.category.DEFAULT" />
-            <data android:mimeType="vnd.android.cursor.item/text_note" />
-            <data android:mimeType="vnd.android.cursor.item/call_note" />
-        </intent-filter>
+            android:exported="true">
+
+            <!-- 意图过滤器1: 响应查看笔记的请求 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <!--
+                  data: 定义Activity能处理的数据类型
+                  android:mimeType: MIME类型，定义能处理的数据格式
+                  vnd.android.cursor.item/text_note: 自定义的文本笔记类型
+                  vnd.android.cursor.item/call_note: 自定义的通话笔记类型
+                -->
+                <data android:mimeType="vnd.android.cursor.item/text_note" />
+                <data android:mimeType="vnd.android.cursor.item/call_note" />
+            </intent-filter>
+
+            <!-- 意图过滤器2: 响应插入或编辑笔记的请求 -->
             <intent-filter>
                 <action android:name="android.intent.action.INSERT_OR_EDIT" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="vnd.android.cursor.item/text_note" />
                 <data android:mimeType="vnd.android.cursor.item/call_note" />
             </intent-filter>
+
+            <!-- 意图过滤器3: 响应搜索请求 -->
             <intent-filter>
                 <action android:name="android.intent.action.SEARCH" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+
+            <!--
+              meta-data: 元数据，提供额外的配置信息
+              android.app.searchable: 指定此Activity支持搜索功能
+              android:resource: 指向搜索配置文件的资源ID
+            -->
             <meta-data
                 android:name="android.app.searchable"
                 android:resource="@xml/searchable" />
         </activity>
 
+        <!-- ==================== Content Provider声明 ==================== -->
+        <!--
+          NotesProvider: 内容提供者，管理应用数据的共享和访问
+          功能: 1. 提供笔记数据的CRUD操作接口
+                2. 允许应用内其他组件通过ContentResolver访问数据
+          android:authorities: 提供者的唯一标识符，用于Content URI
+          android:multiprocess: 是否支持多进程，true表示每个客户端进程都有独立的实例
+          android:exported: false表示只允许本应用访问，增强安全性
+        -->
         <provider
             android:name="net.micode.notes.data.NotesProvider"
             android:authorities="micode_notes"
             android:multiprocess="true"
             android:exported="false" />
 
+        <!-- ==================== Broadcast Receiver声明 ==================== -->
+        <!--
+          Broadcast Receiver: 广播接收器，用于接收系统或应用发送的广播
+        -->
+
+        <!--
+          NoteWidgetProvider_2x: 2x2尺寸的桌面小部件提供者
+          android:label: 小部件在部件选择器中显示的名称
+          android:exported: true表示允许系统和其他应用发送广播到此接收器
+        -->
         <receiver
             android:name=".widget.NoteWidgetProvider_2x"
             android:label="@string/app_widget2x2"
-            android:exported="true"> <intent-filter>
-            <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            <action android:name="android.appwidget.action.APPWIDGET_DELETED" />
-            <action android:name="android.intent.action.PRIVACY_MODE_CHANGED" />
-        </intent-filter>
+            android:exported="true">
+
+            <!-- 意图过滤器: 声明能响应的广播类型 -->
+            <intent-filter>
+                <!-- 小部件更新广播: 当小部件需要更新时触发 -->
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <!-- 小部件删除广播: 当小部件被删除时触发 -->
+                <action android:name="android.appwidget.action.APPWIDGET_DELETED" />
+                <!-- 隐私模式改变广播: 自定义的隐私模式变更广播 -->
+                <action android:name="android.intent.action.PRIVACY_MODE_CHANGED" />
+            </intent-filter>
+
+            <!-- 小部件配置元数据: 指向小部件的配置文件 -->
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_2x_info" />
         </receiver>
 
+        <!-- NoteWidgetProvider_4x: 4x4尺寸的桌面小部件提供者 -->
         <receiver
             android:name=".widget.NoteWidgetProvider_4x"
             android:label="@string/app_widget4x4"
-            android:exported="true"> <intent-filter>
-            <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            <action android:name="android.appwidget.action.APPWIDGET_DELETED" />
-            <action android:name="android.intent.action.PRIVACY_MODE_CHANGED" />
-        </intent-filter>
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.appwidget.action.APPWIDGET_DELETED" />
+                <action android:name="android.intent.action.PRIVACY_MODE_CHANGED" />
+            </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_4x_info" />
         </receiver>
 
+        <!--
+          AlarmInitReceiver: 闹钟初始化接收器
+          功能: 在设备启动完成后重新设置所有闹钟提醒
+        -->
         <receiver
             android:name=".ui.AlarmInitReceiver"
-            android:exported="true"> <intent-filter>
-            <action android:name="android.intent.action.BOOT_COMPLETED" />
-        </intent-filter>
+            android:exported="true">
+            <intent-filter>
+                <!-- BOOT_COMPLETED动作: 系统启动完成广播 -->
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
         </receiver>
 
+        <!--
+          AlarmReceiver: 闹钟触发接收器
+          功能: 接收并处理闹钟触发事件
+          android:process: 指定在独立的":remote"进程中运行，避免影响主进程
+          android:exported: false表示只接收本应用发送的广播
+        -->
         <receiver
             android:name="net.micode.notes.ui.AlarmReceiver"
             android:process=":remote"
             android:exported="false">
         </receiver>
 
+        <!-- ==================== 其他Activity声明 ==================== -->
+
+        <!--
+          AlarmAlertActivity: 闹钟提醒界面
+          android:launchMode: singleInstance表示单独的任务栈，避免与其他Activity混淆
+          android:theme: 使用无标题栏的全屏主题
+        -->
         <activity
             android:name=".ui.AlarmAlertActivity"
             android:label="@string/app_name"
@@ -113,6 +255,10 @@
             android:exported="false">
         </activity>
 
+        <!--
+          NotesPreferenceActivity: 设置偏好界面
+          android:theme: 使用Holo Light主题，亮色风格
+        -->
         <activity
             android:name="net.micode.notes.ui.NotesPreferenceActivity"
             android:label="@string/preferences_title"
@@ -121,13 +267,25 @@
             android:exported="false">
         </activity>
 
+        <!-- ==================== Service声明 ==================== -->
+        <!--
+          GTaskSyncService: Google Task同步服务
+          功能: 在后台处理与Google Task的数据同步
+          注意: exported=false表示此服务只供本应用内部使用
+        -->
         <service
             android:name="net.micode.notes.gtask.remote.GTaskSyncService"
             android:exported="false">
         </service>
 
+        <!-- ==================== 应用级元数据 ==================== -->
+        <!--
+          默认搜索Activity配置: 指定应用默认的搜索Activity
+          当用户从搜索对话框选择此应用时，会启动NoteEditActivity
+        -->
         <meta-data
             android:name="android.app.default_searchable"
             android:value=".ui.NoteEditActivity" />
+
     </application>
 </manifest>
